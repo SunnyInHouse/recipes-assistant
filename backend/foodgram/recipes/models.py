@@ -137,6 +137,11 @@ class Recipe(models.Model):
     def __str__(self):
         return f'{self.name}, автор {self.author}'
 
+    def _get_number_additions_favourite(self):
+        return self.favourites.count()
+
+    _get_number_additions_favourite.short_description = 'в избранном у'
+
 
 class IngridientRecipe(models.Model):
     """Модель, обеспечивающая связь ингридиента и его количества, необходимого
@@ -170,7 +175,7 @@ class IngridientRecipe(models.Model):
 class FavoriteList(models.Model):
     """Модель для описания избранных рецептов пользователя.
     """
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         verbose_name='Автор списка избранного',
         on_delete=models.CASCADE,
@@ -178,7 +183,7 @@ class FavoriteList(models.Model):
     )
     recipes = models.ManyToManyField(
         Recipe,
-        verbose_name='Рецепт',
+        verbose_name='Рецепты',
         related_name='favourites',
     )
 
@@ -202,7 +207,7 @@ class ShoppingList(models.Model):
     )
     recipes = models.ManyToManyField(
         Recipe,
-        verbose_name='Рецепт',
+        verbose_name='Рецепты',
         related_name='shoppings',
     )
 
@@ -213,3 +218,6 @@ class ShoppingList(models.Model):
 
     def __str__(self):
         return f'Список покупок пользователя {self.user}'
+
+    # def _get_list_of_ingridients(self):
+    #     pass

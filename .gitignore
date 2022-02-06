@@ -134,3 +134,7 @@ dmypy.json
 # vs code
 /.DS_Store
 .DS_Store
+
+#media
+/media
+media/
