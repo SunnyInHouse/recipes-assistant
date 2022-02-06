@@ -9,7 +9,8 @@ admin.site.site_header = 'Администрирование Foodgram - сайт
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit',)
     list_filter = ('name',)
-    search_fields = ('ingridient',)
+    search_fields = ('name',)
+    search_help_text = 'поиск по ингридиентам'
 
 
 class IngredientInline(admin.TabularInline):
@@ -37,7 +38,12 @@ class IngredientRecipeInline(admin.TabularInline):
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author', '_get_number_additions_favourite',)
+    list_display = (
+        'name',
+        'author',
+        '_get_number_additions_to_favourite',
+        '_get_number_ingridients',
+        )
     list_filter = ('name', 'author', 'tags')
     search_fields = ('name',)
     inlines = [

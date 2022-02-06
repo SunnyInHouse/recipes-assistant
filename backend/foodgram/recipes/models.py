@@ -126,21 +126,25 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ('-pub_date',)
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(cooking_time__gte=1),
-                name=('время приготовления должно быть больше или равно 1 '
-                      'минуте')
-            ),
-        ]
+        # constraints = [
+        #     models.CheckConstraint(
+        #         check=models.Q(ingridients.through.objects.count()__gte=1),
+        #         name=('в рецепте должно быть более 1 ингридиента')
+        #     ),
+        # ]
 
     def __str__(self):
         return f'{self.name}, автор {self.author}'
 
-    def _get_number_additions_favourite(self):
+    def _get_number_additions_to_favourite(self):
         return self.favourites.count()
 
-    _get_number_additions_favourite.short_description = 'в избранном у'
+    _get_number_additions_to_favourite.short_description = 'в избранном у'
+
+    def _get_number_ingridients(self):
+        return self.ingridients.through.objects.count()
+
+    _get_number_ingridients.short_description = 'количество ингридиентов'
 
 
 class IngridientRecipe(models.Model):
@@ -165,7 +169,17 @@ class IngridientRecipe(models.Model):
     class Meta:
         verbose_name = 'Ингридиент-количество для рецепта'
         verbose_name_plural = 'Ингридиенты с количествами для рецепта'
-        ordering = ('recipe',)
+        ordering = ('recipe__name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingridient', 'recipe'],
+                name='уникальность ингридиента в рецепте',
+            ),
+            models.CheckConstraint(
+                check=models.Q(quantity__gt=0),
+                name=('количество ингридиента должно быть больше 0')
+            ),
+        ]
 
     def __str__(self):
         return (f'Для рецепта {self.recipe} необходимо {self.quantity} '
