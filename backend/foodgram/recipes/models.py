@@ -4,7 +4,8 @@ from django.db import models
 
 
 class Ingredient(models.Model):
-    """Модель для описания ингридиентов, входящих в рецепты.
+    """
+    Модель для описания ингридиентов, входящих в рецепты.
     """
 
     name = models.CharField(
@@ -32,7 +33,8 @@ class Ingredient(models.Model):
 
 
 class Tag(models.Model):
-    """Модель для описания тега.
+    """
+    Модель для описания тега.
     """
     name = models.CharField(
         'Название тега',
@@ -72,7 +74,8 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
-    """Модель для описания рецепта.
+    """
+    Модель для описания рецепта.
     """
 
     name = models.CharField(
@@ -137,18 +140,25 @@ class Recipe(models.Model):
         return f'{self.name}, автор {self.author}'
 
     def _get_number_additions_to_favourite(self):
+        """
+        Функция вычисляет число добавления рецептов в избранное.
+        """
         return self.favourites.count()
 
     _get_number_additions_to_favourite.short_description = 'в избранном у'
 
     def _get_number_ingridients(self):
+        """
+        Функция вычисляет число ингридиентов в рецепте.
+        """
         return self.ingridients.through.objects.count()
 
     _get_number_ingridients.short_description = 'количество ингридиентов'
 
 
 class IngridientRecipe(models.Model):
-    """Модель, обеспечивающая связь ингридиента и его количества, необходимого
+    """
+    Модель, обеспечивающая связь ингридиента и его количества, необходимого
     для конкретного рецепта.
     """
 
@@ -187,7 +197,8 @@ class IngridientRecipe(models.Model):
 
 
 class FavoriteList(models.Model):
-    """Модель для описания избранных рецептов пользователя.
+    """
+    Модель для описания избранных рецептов пользователя.
     """
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -211,7 +222,8 @@ class FavoriteList(models.Model):
 
 
 class ShoppingList(models.Model):
-    """Модель для описания списка покупок пользователя.
+    """
+    Модель для описания списка покупок пользователя.
     """
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,

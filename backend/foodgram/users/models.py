@@ -3,7 +3,8 @@ from django.db import models
 
 
 class User(AbstractUser):
-    """Модель для описания пользователей.
+    """
+    Модель для описания пользователей.
     """
 
     username = models.CharField(
@@ -49,7 +50,8 @@ class User(AbstractUser):
 
 
 class Subscribe(models.Model):
-    """Модель для описания системы подписки.
+    """
+    Модель для описания системы подписки.
     """
     user_subscriber = models.ForeignKey(
         User,

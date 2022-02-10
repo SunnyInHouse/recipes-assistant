@@ -6,7 +6,7 @@ from . import views
 
 router1 = DefaultRouter()
 
-router1.register('', views.UserReadOnlyViewSet, basename = 'users')
+router1.register('', views.UserViewSet, basename = 'users')
 
 urlpatterns = [
     path('', include(router1.urls) )

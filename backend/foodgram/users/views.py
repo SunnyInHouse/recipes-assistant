@@ -10,11 +10,16 @@ from . models import Subscribe, User
 from . serializers import UserCreateSerializer, UserSerializer, UserChangePasswordSerializer
 
 
-class UserReadOnlyViewSet(
+class UserViewSet(
     CreateModelMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet,
 ):
+    """
+    Вьюсет для работы с пользователями.
+    """
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    lookup_field = 'id'
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'me'):
@@ -29,21 +34,15 @@ class UserReadOnlyViewSet(
         detail = False
     )
     def set_password(self, request):
+        """
+        Метод для обработки запроса POST на изменение пароля авторизованным
+        пользователем, запрос на /users/set_password.
+        """
         user = request.user
-        serializer = self.get_serializer(user)
-        return Response()
-
-#  def set_password(self, request, pk=None):
-#         user = self.get_object()
-#         serializer = PasswordSerializer(data=request.data)
-#         if serializer.is_valid():
-#             user.set_password(serializer.validated_data['password'])
-#             user.save()
-#             return Response({'status': 'password set'})
-#         else:
-#             return Response(serializer.errors,
-#                             status=status.HTTP_400_BAD_REQUEST)
-
+        serializer = self.get_serializer(user, data=request.data)
+        if serializer.is_valid():
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         methods =['GET',],
@@ -51,6 +50,10 @@ class UserReadOnlyViewSet(
         detail = False
     )
     def me(self, request):
+        """
+        Метод для обработки запроса GET на получение данных профиля текущего
+        пользователя, запрос на /users/me.
+        """
         user = request.user
         serializer = self.get_serializer(user)
         return Response(serializer.data, status = status.HTTP_200_OK)
