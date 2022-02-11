@@ -1,5 +1,6 @@
 from rest_framework.decorators import action
-from rest_framework.viewsets import ReadOnlyModelViewSet, GenericViewSet
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
     CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 )
@@ -7,7 +8,11 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from . models import Subscribe, User
-from . serializers import UserCreateSerializer, UserSerializer, UserChangePasswordSerializer
+from . serializers import (
+    UserSerializer,
+    UserChangePasswordSerializer,
+    GetTokenSerializer,
+)
 
 
 class UserViewSet(
@@ -15,6 +20,7 @@ class UserViewSet(
 ):
     """
     Вьюсет для работы с пользователями.
+    URL - /users/.
     """
 
     queryset = User.objects.all()
@@ -22,7 +28,7 @@ class UserViewSet(
     lookup_field = 'id'
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve', 'me'):
+        if self.action in ('list', 'retrieve', 'me', 'create'):
             return UserSerializer
         if self.action == 'set_password':
             return UserChangePasswordSerializer
@@ -36,7 +42,8 @@ class UserViewSet(
     def set_password(self, request):
         """
         Метод для обработки запроса POST на изменение пароля авторизованным
-        пользователем, запрос на /users/set_password.
+        пользователем.
+        URL - /users/set_password.
         """
         user = request.user
         serializer = self.get_serializer(user, data=request.data)
@@ -52,10 +59,34 @@ class UserViewSet(
     def me(self, request):
         """
         Метод для обработки запроса GET на получение данных профиля текущего
-        пользователя, запрос на /users/me.
+        пользователя.
+        URL - /users/me.
         """
         user = request.user
         serializer = self.get_serializer(user)
         return Response(serializer.data, status = status.HTTP_200_OK)
 
 
+class GetTokenView(APIView):
+    """
+    Класс для обработки POST запросов для получения токена авторизации по email
+    и паролю.
+    URL - /auth/token/login/.
+    """
+
+    def post(self, request):
+        serializer = GetTokenSerializer(data=request.data)
+        return Response(status = status.HTTP_200_OK)
+   
+
+
+class DelTokenView(APIView):
+    """
+    Класс для обработки POST запросов для удаления токена авторизации текущего
+    пользователя.
+    URL - /auth/token/logout/.
+    """
+
+    def post(self, request):
+        ...
+    pass

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.contrib.auth.password_validation import validate_password, password_changed, password_validators_help_texts
+from django.contrib.auth.password_validation import password_changed
 from django.contrib.auth.hashers import check_password
 
 from users.models import Subscribe, User
@@ -20,9 +20,16 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'id',
             'username',
-            'first_name','last_name',
+            'first_name',
+            'last_name',
+            'password',
             'is_subscribed',
         )
+        read_only_fields = ('is_subscribed', )
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
 
     def get_is_subscribed(self, obj):
         """
@@ -33,23 +40,6 @@ class UserSerializer(serializers.ModelSerializer):
         if user.is_authenticated:
             return user.subscribers.filter(user_author=obj).exists()
         return False
-
-
-class UserCreateSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для обработки запросов POST на создание пользователей на
-    /users.
-    """
-
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-        )
     
     def validate_password(self, value):
         password_verification(value)
@@ -62,7 +52,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
     """
 
     current_password = serializers.CharField(max_length=128)
-    new_password = serializers.CharField(max_length=128)
+    new_password = serializers.CharField(max_length=128, min_length=8)
 
     def update(self, instance, validated_data):
         instance.password = instance.set_password(validated_data['new_password'])
@@ -80,7 +70,21 @@ class UserChangePasswordSerializer(serializers.Serializer):
         raise serializers.ValidationError('Указан неверный текущий пароль пользователя.')
 
     def validate_new_password(self, value):
-        """
-        Метод проверяет, что новый пароль соответствует настройкам безопасности.
-        """
         password_verification(value)
+
+
+class GetTokenSerializer(serializers.Serializer):
+    """
+    Сериализатор для обработки запросов на получение токена, валидирует
+    полученные данные (соотвествие user и полученных email, password).
+    """
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=128, min_length=8)
+
+    def validate_email(self, value):
+        pass
+
+    def validate_password(self, value):
+        pass
+
+    pass
