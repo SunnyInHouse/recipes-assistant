@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 from django.contrib.auth.password_validation import password_changed
 from django.contrib.auth.hashers import check_password
 
@@ -13,6 +14,22 @@ class UserSerializer(serializers.ModelSerializer):
     """
 
     is_subscribed = serializers.SerializerMethodField()
+    username = serializers.CharField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message='Пользователь с указанным username уже существует.'
+            ),
+        ]
+    )
+    email = serializers.EmailField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message='Пользователь с указанным e-mail уже существует.'
+            ),
+        ]
+    )
 
     class Meta:
         model = User
@@ -29,6 +46,15 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True}
         }
+        validators = [
+            UniqueTogetherValidator(
+                queryset=User.objects.all(),
+                fields=("username", "email"),
+                message=(
+                    "Задано не уникальное сочетание полей email " "и username."
+                ),
+            ),
+        ]
 
 
     def get_is_subscribed(self, obj):
@@ -81,10 +107,11 @@ class GetTokenSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(max_length=128, min_length=8)
 
-    def validate_email(self, value):
-        pass
-
-    def validate_password(self, value):
-        pass
+    def validate(self, data):
+        """
+        This method takes a single argument, which is a dictionary of field values.
+        self.context - дополнительно переданные данные
+        """
+        # data['email']
 
     pass

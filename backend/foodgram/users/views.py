@@ -75,7 +75,10 @@ class GetTokenView(APIView):
     """
 
     def post(self, request):
-        serializer = GetTokenSerializer(data=request.data)
+        serializer = GetTokenSerializer(
+            data=request.data,
+            context = {'user': request.user}
+        )
         return Response(status = status.HTTP_200_OK)
    
 
