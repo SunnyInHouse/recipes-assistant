@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 from django.contrib.auth.password_validation import password_changed
 from django.contrib.auth.hashers import check_password
+from django.shortcuts import get_object_or_404
 
 from users.models import Subscribe, User
 from . services import password_verification
@@ -15,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
     username = serializers.CharField(
+        max_length=150,
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
@@ -23,6 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
         ]
     )
     email = serializers.EmailField(
+        max_length=254,
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
@@ -104,14 +107,21 @@ class GetTokenSerializer(serializers.Serializer):
     Сериализатор для обработки запросов на получение токена, валидирует
     полученные данные (соотвествие user и полученных email, password).
     """
-    email = serializers.EmailField()
-    password = serializers.CharField(max_length=128, min_length=8)
+
+    email = serializers.EmailField(max_length=254)
+    password = serializers.CharField(max_length=128)
 
     def validate(self, data):
         """
-        This method takes a single argument, which is a dictionary of field values.
-        self.context - дополнительно переданные данные
+        Проверяет, что предоставленный пользователем email соотвествует
+        пользователю в базе данных и указанный пароль корректен.
         """
-        # data['email']
+        try:
+            user=User.objects.get(email=data['email'])
+        except User.DoesNotExist:
+            raise serializers.ValidationError('Предоставлен email незарегистрированного пользователя.')
 
-    pass
+        if user.check_password(data['password']):
+            return data
+        raise serializers.ValidationError('Неверный пароль для пользователя с указанным email.')
+

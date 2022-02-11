@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 def password_verification(value):
     """
-    Функция для проверки корректности введенного пользователем пароля.
+    Функция для проверки корректности полученного от пользователя пароля.
     """
     help_text = password_validators_help_texts()
     if validate_password(value):

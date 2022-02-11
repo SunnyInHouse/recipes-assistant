@@ -75,11 +75,11 @@ class GetTokenView(APIView):
     """
 
     def post(self, request):
-        serializer = GetTokenSerializer(
-            data=request.data,
-            context = {'user': request.user}
-        )
-        return Response(status = status.HTTP_200_OK)
+        serializer = GetTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            # создание токена и отдать в response
+            return Response(status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
    
 
 
@@ -90,6 +90,8 @@ class DelTokenView(APIView):
     URL - /auth/token/logout/.
     """
 
+    authentication_classes = []
+
     def post(self, request):
-        ...
-    pass
+        # удаление токена - добавление в блэклист
+        return Response(status=status.HTTP_204_NO_CONTENT)
