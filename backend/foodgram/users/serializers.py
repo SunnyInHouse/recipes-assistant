@@ -102,26 +102,40 @@ class UserChangePasswordSerializer(serializers.Serializer):
         password_verification(value)
 
 
-class GetTokenSerializer(serializers.Serializer):
-    """
-    Сериализатор для обработки запросов на получение токена, валидирует
-    полученные данные (соотвествие user и полученных email, password).
-    """
+# class GetTokenSerializer(serializers.Serializer):
+#     """
+#     Сериализатор для обработки запросов на получение токена, валидирует
+#     полученные данные (соотвествие user и полученных email, password).
+#     """
 
-    email = serializers.EmailField(max_length=254)
-    password = serializers.CharField(max_length=128)
+#     email = serializers.EmailField(max_length=254)
+#     password = serializers.CharField(max_length=128)
 
-    def validate(self, data):
-        """
-        Проверяет, что предоставленный пользователем email соотвествует
-        пользователю в базе данных и указанный пароль корректен.
-        """
-        try:
-            user=User.objects.get(email=data['email'])
-        except User.DoesNotExist:
-            raise serializers.ValidationError('Предоставлен email незарегистрированного пользователя.')
+#     def validate(self, data):
+#         """
+#         Проверяет, что предоставленный пользователем email соотвествует
+#         пользователю в базе данных и указанный пароль корректен.
+#         """
+#         try:
+#             user=User.objects.get(email=data['email'])
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError('Предоставлен email незарегистрированного пользователя.')
 
-        if user.check_password(data['password']):
-            return data
-        raise serializers.ValidationError('Неверный пароль для пользователя с указанным email.')
+#         if user.check_password(data['password']):
+#             return data
+#         raise serializers.ValidationError('Неверный пароль для пользователя с указанным email.')
 
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer
+)
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    default_error_messages = {
+        "no_active_account": ("Не существует аккаунта с предоставленными учетными данными")
+    }
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        return {
+            'auth_token': data['access']
+        }

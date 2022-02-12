@@ -11,7 +11,8 @@ from . models import Subscribe, User
 from . serializers import (
     UserSerializer,
     UserChangePasswordSerializer,
-    GetTokenSerializer,
+    # GetTokenSerializer,
+    CustomTokenObtainPairSerializer,
 )
 
 
@@ -67,21 +68,46 @@ class UserViewSet(
         return Response(serializer.data, status = status.HTTP_200_OK)
 
 
-class GetTokenView(APIView):
-    """
-    Класс для обработки POST запросов для получения токена авторизации по email
-    и паролю.
-    URL - /auth/token/login/.
-    """
+# class GetTokenView(APIView):
+#     """
+#     Класс для обработки POST запросов для получения токена авторизации по email
+#     и паролю.
+#     URL - /auth/token/login/.
+#     """
+
+#     def post(self, request):
+#         serializer = GetTokenSerializer(data=request.data)
+#         if serializer.is_valid():
+#             # создание токена и отдать в response
+#             return Response(status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+)
+class CustomTokenObtainPairView(TokenObtainPairView):
+
+    serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request):
-        serializer = GetTokenSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            # создание токена и отдать в response
-            return Response(status=status.HTTP_200_OK)
+            return Response(
+                serializer.validated_data,
+                status=status.HTTP_201_CREATED
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-   
+        
 
+# def post(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+
+#         try:
+#             serializer.is_valid(raise_exception=True)
+#         except TokenError as e:
+#             raise InvalidToken(e.args[0])
+
+#         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 class DelTokenView(APIView):
     """
