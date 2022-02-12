@@ -6,12 +6,12 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from . models import Subscribe, User
 from . serializers import (
     UserSerializer,
     UserChangePasswordSerializer,
-    # GetTokenSerializer,
     CustomTokenObtainPairSerializer,
 )
 
@@ -82,10 +82,15 @@ class UserViewSet(
 #             return Response(status=status.HTTP_200_OK)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-)
+
 class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Класс для обработки POST запросов для получения jwt токена авторизации по
+    email и паролю. 
+    Унаследован от стандартного класса библиотеки rest_framework_simplejwt - 
+    views.TokenObtainPairView.
+    URL - /auth/token/login/.
+    """
 
     serializer_class = CustomTokenObtainPairSerializer
 
@@ -97,17 +102,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
 
-# def post(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-
-#         try:
-#             serializer.is_valid(raise_exception=True)
-#         except TokenError as e:
-#             raise InvalidToken(e.args[0])
-
-#         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 class DelTokenView(APIView):
     """

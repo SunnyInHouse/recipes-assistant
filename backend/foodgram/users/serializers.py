@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.password_validation import password_changed
 from django.contrib.auth.hashers import check_password
 from django.shortcuts import get_object_or_404
@@ -125,10 +126,14 @@ class UserChangePasswordSerializer(serializers.Serializer):
 #             return data
 #         raise serializers.ValidationError('Неверный пароль для пользователя с указанным email.')
 
-from rest_framework_simplejwt.serializers import (
-    TokenObtainPairSerializer
-)
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Сериализатор для обработки запросов на получение jwt токена - валидирует
+    полученные данные и возвращает токен доступа.
+    Унаследован от стандартного класса библиотеки rest_framework_simplejwt - 
+    serializers.TokenObtainPairSerializer.
+    """
 
     default_error_messages = {
         "no_active_account": ("Не существует аккаунта с предоставленными учетными данными")
