@@ -24,16 +24,17 @@ class UserViewSet(
     URL - /users/.
     """
 
+    name = 'Обработка запросов о пользователях'
+    description = 'Обработка запросов о пользователях'
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = 'id'
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve', 'me', 'create'):
-            return UserSerializer
         if self.action == 'set_password':
             return UserChangePasswordSerializer
-        return UserCreateSerializer
+        return UserSerializer
+
 
     @action(
         methods =['POST',],
@@ -92,6 +93,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     URL - /auth/token/login/.
     """
 
+    name = 'Получение JWT токена'
+    description = 'Получение JWT токена'
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request):

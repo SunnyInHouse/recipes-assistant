@@ -136,7 +136,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
 
     default_error_messages = {
-        "no_active_account": ("Не существует аккаунта с предоставленными учетными данными")
+        "no_active_account": 
+            "Не существует аккаунта с предоставленными учетными данными",
     }
 
     def validate(self, attrs):
