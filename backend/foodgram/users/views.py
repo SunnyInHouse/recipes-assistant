@@ -6,13 +6,13 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.views import TokenObtainPairView
 
 from . models import Subscribe, User
 from . serializers import (
     UserSerializer,
     UserChangePasswordSerializer,
-    CustomTokenObtainPairSerializer,
+    GetTokenSerializer,
+    # CustomTokenObtainPairSerializer,
 )
 
 
@@ -69,41 +69,21 @@ class UserViewSet(
         return Response(serializer.data, status = status.HTTP_200_OK)
 
 
-# class GetTokenView(APIView):
-#     """
-#     Класс для обработки POST запросов для получения токена авторизации по email
-#     и паролю.
-#     URL - /auth/token/login/.
-#     """
-
-#     def post(self, request):
-#         serializer = GetTokenSerializer(data=request.data)
-#         if serializer.is_valid():
-#             # создание токена и отдать в response
-#             return Response(status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CustomTokenObtainPairView(TokenObtainPairView):
+class GetTokenView(APIView):
     """
-    Класс для обработки POST запросов для получения jwt токена авторизации по
-    email и паролю. 
-    Унаследован от стандартного класса библиотеки rest_framework_simplejwt - 
-    views.TokenObtainPairView.
+    Класс для обработки POST запросов для получения токена авторизации по email
+    и паролю.
     URL - /auth/token/login/.
     """
 
-    name = 'Получение JWT токена'
-    description = 'Получение JWT токена'
-    serializer_class = CustomTokenObtainPairSerializer
-
     def post(self, request):
-        serializer = self.get_serializer(data=request.data)
+        serializer = GetTokenSerializer(data=request.data)
         if serializer.is_valid():
+            user = User.objects.get(email=serializer.validated_data['email'])
+            # token = RefreshToken.for_user(user)
             return Response(
-                serializer.validated_data,
-                status=status.HTTP_201_CREATED
-            )
+                {'auth_token': ''},#str(token.access_token)},
+                status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -114,8 +94,10 @@ class DelTokenView(APIView):
     URL - /auth/token/logout/.
     """
 
-    authentication_classes = []
+    # authentication_classes = []
+
 
     def post(self, request):
-        # удаление токена - добавление в блэклист
+        token = request.auth
+        
         return Response(status=status.HTTP_204_NO_CONTENT)
