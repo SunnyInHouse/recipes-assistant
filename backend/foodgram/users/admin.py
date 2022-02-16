@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from rest_framework.authtoken.admin import TokenAdmin
 
 from .models import Subscribe, User
 
@@ -20,6 +21,17 @@ class SubscribeAdmin(admin.ModelAdmin):
         'user_author',
         'user_subscriber',
     )
+
+
+class CustomUserInline(admin.TabularInline):
+    model = User
+    raw_id_fields = ['user']
+
+
+class CustomTokenAdmin(TokenAdmin):
+    inlines = [
+        CustomUserInline,
+    ]
 
 
 admin.site.register(User, CustomUserAdmin)
