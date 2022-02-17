@@ -1,3 +1,4 @@
+from urllib import request
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -10,8 +11,9 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from .models import Subscribe, User
-from .serializers import (GetTokenSerializer, UserChangePasswordSerializer,
-                          UserSerializer)
+from .serializers import (GetTokenSerializer, ListSubscriptionsSerializer,
+                          UserChangePasswordSerializer, UserSerializer)
+from foodgram.pagination import CustomPageNumberPagination
 
 
 class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
@@ -23,14 +25,18 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 
     name = 'Обработка запросов о пользователях'
     description = 'Обработка запросов о пользователях'
-    queryset = User.objects.all()
     serializer_class = UserSerializer
-    lookup_field = 'id'
     permission_classes = (IsAuthenticated,)
+    queryset = User.objects.all()
+    lookup_field = 'id'
+    pagination_class = CustomPageNumberPagination
+    
 
     def get_serializer_class(self):
         if self.action == 'set_password':
             return UserChangePasswordSerializer
+        if self.action == 'subscriptions':
+            return ListSubscriptionsSerializer
         return UserSerializer
 
     def get_permissions(self):
@@ -75,6 +81,31 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         """
         user = request.user
         serializer = self.get_serializer(user)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
+
+    @action(
+        methods=['GET', ],
+        url_path='subscriptions',
+        detail=False
+    )
+    def subscriptions(self,request):
+        """
+        Метод для обработки GET запросов на получение списка пользователей, на 
+        которых подписан текущий пользователь. В выдачу добавляются рецепты.
+        URL - /users/subscriptions/.
+        """
+        user = request.user
+        queryset = User.objects.filter(authors__user_subscriber=user)
+
+        page = self.paginate_queryset(queryset)
+        if page:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
         return Response(
             serializer.data,
             status=status.HTTP_200_OK
@@ -132,3 +163,29 @@ class DelTokenView(APIView):
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+# class ListSubscriptions(ListModelMixin, GenericViewSet):
+#     """
+#     Класс для обработки GET запросов на получение пользователей, на которых
+#     подписан текущий пользователь. В выдачу добавляются рецепты.
+#     URL - /users/subscriptions/.
+#     """
+
+#     name = 'Получение списка подписок'
+#     description = 'Получение списка подписок'
+
+
+#     # serializer_class = ListSubscriptionsSerializer
+#     queryset = Subscribe.objects.all()
+
+#     # def get_queryset(self):
+#     #     user=request.user
+#     #     print(user)
+#     #     return Subscribe.objects.all()
+    
+#     def list(self, request):
+#         # serializer = self.get_serializer(request)
+#         # if serializer.is_valid():
+#         #     return Response(serializer.data)
+#         return Response(status=status.HTTP_200_OK)

@@ -1,4 +1,4 @@
-from django.contrib.auth.hashers import check_password
+# from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import password_changed
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
@@ -42,6 +42,7 @@ class UserSerializer(serializers.ModelSerializer):
             'username',
             'first_name',
             'last_name',
+            'password',
             'is_subscribed',
         )
         read_only_fields = ('is_subscribed', )
@@ -68,12 +69,6 @@ class UserSerializer(serializers.ModelSerializer):
             return user.subscribers.filter(user_author=obj).exists()
         return False
 
-    def validate_password(self, value):
-        """
-        Метод для валидации пароля, полученного от пользователя.
-        """
-        password_verification(value)
-
 
 class UserChangePasswordSerializer(serializers.Serializer):
     """
@@ -96,7 +91,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
         Метод проверяет, что указанный пароль соответствует паролю
         пользователя, отправившему запрос.
         """
-        if check_password(value, self.instance.password):
+        if value == self.instance.password:
             return value
         raise serializers.ValidationError(
             'Указан неверный текущий пароль пользователя.'
@@ -108,8 +103,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
 
 class GetTokenSerializer(serializers.Serializer):
     """
-    Сериализатор для обработки запросов на получение токена, валидирует
-    полученные данные (соотвествие user и полученных email, password).
+    Сериализатор для обработки запросов на получение токена.
     """
 
     email = serializers.EmailField(max_length=254)
@@ -118,7 +112,8 @@ class GetTokenSerializer(serializers.Serializer):
     def validate(self, data):
         """
         Проверяет, что предоставленный пользователем email соотвествует
-        пользователю в базе данных и указанный пароль корректен.
+        пользователю в базе данных и указанный пароль корректен для
+        пользователя с указанным e-mail.
         """
         try:
             user = User.objects.get(email=data['email'])
@@ -127,8 +122,65 @@ class GetTokenSerializer(serializers.Serializer):
                 'Предоставлен email незарегистрированного пользователя.'
             )
 
-        if user.check_password(data['password']):
+        if user.password==data['password']: #user.check_password(data['password']):
             return data
         raise serializers.ValidationError(
             'Неверный пароль для пользователя с указанным email.'
         )
+
+
+class RecipesForListSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для получения данных о рецептах для выдачи их в списке
+    подписок.
+    """
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'name',
+            'image',
+            'cooking_time',
+        )
+
+class ListSubscriptionsSerializer(UserSerializer):
+    """
+    Сериализатор для обработки запросов на получение списка пользователей, на
+    которых подписан текущий пользователь. В выдачу добавляются рецепты.
+    """
+
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+        )
+
+    def get_recipes(self, obj):
+        """
+        Функция получает список рецептов пользователя. Отдает ограниченное
+        автором запроса число рецептов (recipes_limit), если указано.
+        """
+        request = self.context.get('request')
+        recipes = obj.recipes.all()
+        limit = request.query_params.get('recipes_limit')
+        if limit:
+            recipes = recipes[:int(limit)]
+        return RecipesForListSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, obj):
+        """
+        Функция считает число рецептов у пользователя, на которого подписан
+        автор запроса.
+        """
+        return obj.recipes.count()

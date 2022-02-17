@@ -30,7 +30,10 @@ class User(AbstractUser):
         error_messages={
             'unique': 'Пользователь с указанным e-mail уже существует.',
         }
-
+    )
+    password = models.CharField(
+        'Пароль',
+        max_length=150,
     )
 
     USERNAME_FIELD = 'email'
