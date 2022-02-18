@@ -1,4 +1,4 @@
-from urllib import request
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -12,7 +12,8 @@ from rest_framework.viewsets import GenericViewSet
 
 from .models import Subscribe, User
 from .serializers import (GetTokenSerializer, ListSubscriptionsSerializer,
-                          UserChangePasswordSerializer, UserSerializer)
+                          UserChangePasswordSerializer, UserSerializer,
+                          SubscribeSerializer)
 from foodgram.pagination import CustomPageNumberPagination
 
 
@@ -37,6 +38,8 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
             return UserChangePasswordSerializer
         if self.action == 'subscriptions':
             return ListSubscriptionsSerializer
+        if self.action in ('subscribe'):
+            return SubscribeSerializer
         return UserSerializer
 
     def get_permissions(self):
@@ -111,6 +114,49 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
             status=status.HTTP_200_OK
         )
 
+    @action(
+        methods=['POST', 'DELETE' ],
+        url_path='(?P<id>\d+)/subscribe',
+        detail=False,
+    )
+    def subscribe(self, request, id):
+        """
+        Метод для обработки POST и DELETE запросов на создание/удаление
+        подписки на пользователя (его данные указаны в path параметре id).
+        URL = /users/{id}/subscribe/.
+        """
+
+        user_author = get_object_or_404(User, id=int(id))
+
+        data = {
+            'user_subscriber': request.user.id,
+            'user_author': user_author.id,
+        }
+
+        serializer = self.get_serializer(data=data)
+
+        if request.method == 'POST':
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        # обработка запроса DELETE
+        try:
+            subscribe = Subscribe.objects.get(user_subscriber=request.user, user_author=user_author)
+        except Subscribe.DoesNotExist:
+            return Response(
+                {'errors': 'Указанной подписки не существует.',},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        subscribe.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class GetTokenView(ObtainAuthToken):
     """
@@ -136,7 +182,7 @@ class GetTokenView(ObtainAuthToken):
                 {
                     'auth_token': token.key
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_201_CREATED
             )
         return Response(
             serializer.errors,
@@ -163,29 +209,3 @@ class DelTokenView(APIView):
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
-
-
-# class ListSubscriptions(ListModelMixin, GenericViewSet):
-#     """
-#     Класс для обработки GET запросов на получение пользователей, на которых
-#     подписан текущий пользователь. В выдачу добавляются рецепты.
-#     URL - /users/subscriptions/.
-#     """
-
-#     name = 'Получение списка подписок'
-#     description = 'Получение списка подписок'
-
-
-#     # serializer_class = ListSubscriptionsSerializer
-#     queryset = Subscribe.objects.all()
-
-#     # def get_queryset(self):
-#     #     user=request.user
-#     #     print(user)
-#     #     return Subscribe.objects.all()
-    
-#     def list(self, request):
-#         # serializer = self.get_serializer(request)
-#         # if serializer.is_valid():
-#         #     return Response(serializer.data)
-#         return Response(status=status.HTTP_200_OK)

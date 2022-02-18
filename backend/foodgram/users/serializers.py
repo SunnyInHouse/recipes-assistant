@@ -146,7 +146,7 @@ class GetTokenSerializer(serializers.Serializer):
         )
 
 
-class RecipesForListSerializer(serializers.ModelSerializer):
+class RecipesForSerializers(serializers.ModelSerializer):
     """
     Сериализатор для получения данных о рецептах для выдачи их в списке
     подписок.
@@ -193,7 +193,7 @@ class ListSubscriptionsSerializer(UserSerializer):
         limit = request.query_params.get('recipes_limit')
         if limit:
             recipes = recipes[:int(limit)]
-        return RecipesForListSerializer(recipes, many=True).data
+        return RecipesForSerializers(recipes, many=True).data
 
     def get_recipes_count(self, obj):
         """
@@ -201,3 +201,52 @@ class ListSubscriptionsSerializer(UserSerializer):
         автор запроса.
         """
         return obj.recipes.count()
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для обработки запросов на создание и удаление подписки на
+    пользователя.
+    """
+
+    queryset=User.objects.all()
+    user_author = serializers.PrimaryKeyRelatedField(queryset=queryset)
+    user_subscriber = serializers.PrimaryKeyRelatedField(queryset=queryset)
+
+    class Meta:
+        model = Subscribe
+        fields = ('user_subscriber', 'user_author')
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Subscribe.objects.all(),
+                fields=("user_subscriber", "user_author"),
+                message=(
+                    "Вы уже подписаны на данного пользователя."
+                ),
+            ),
+        ]
+
+    def validate(self, data):
+        """
+        Функция проверяет, что пользователь не подписывается на самого себя.
+        """
+        id_user = data['user_subscriber']
+        id_author = data['user_author']
+        if id_user == id_author:
+            raise serializers.ValidationError(
+                'Нельзя подписываться на самого себя.'
+            )
+        return data
+
+    def to_representation(self, instance):
+        """
+        Функция для получения представления объекта подписки в виде,
+        запрошенном в ТЗ. (аналогично представлению в списке подписок)
+        """
+        data = instance.user_author
+        return ListSubscriptionsSerializer(
+            data, 
+            context={
+                'request': self.context.get('request'),
+            }
+        ).data
