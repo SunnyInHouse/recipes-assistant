@@ -69,6 +69,23 @@ class UserSerializer(serializers.ModelSerializer):
             return user.subscribers.filter(user_author=obj).exists()
         return False
 
+    def create(self, validated_data):
+        """
+        Функция для создания пользователя.
+        """
+        password = validated_data.pop('password')
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+    def validate_password(self, value):
+        """
+        Функция проверяет заданный пользователем пароль на соответстие
+        установленным требованиям к паролям.
+        """
+        return password_verification(value)
+
 
 class UserChangePasswordSerializer(serializers.Serializer):
     """
@@ -88,7 +105,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
 
     def validate_current_password(self, value):
         """
-        Метод проверяет, что указанный пароль соответствует паролю
+        Функция проверяет, что указанный пароль соответствует паролю
         пользователя, отправившему запрос.
         """
         if value == self.instance.password:
@@ -98,7 +115,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
         )
 
     def validate_new_password(self, value):
-        password_verification(value)
+        return password_verification(value)
 
 
 class GetTokenSerializer(serializers.Serializer):
@@ -111,7 +128,7 @@ class GetTokenSerializer(serializers.Serializer):
 
     def validate(self, data):
         """
-        Проверяет, что предоставленный пользователем email соотвествует
+        Функция проверяет, что предоставленный пользователем email соотвествует
         пользователю в базе данных и указанный пароль корректен для
         пользователя с указанным e-mail.
         """
@@ -122,7 +139,7 @@ class GetTokenSerializer(serializers.Serializer):
                 'Предоставлен email незарегистрированного пользователя.'
             )
 
-        if user.password==data['password']: #user.check_password(data['password']):
+        if user.check_password(data['password']):
             return data
         raise serializers.ValidationError(
             'Неверный пароль для пользователя с указанным email.'
