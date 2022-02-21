@@ -31,4 +31,4 @@ class IngredientViewset(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     pagination_class = None
     filter_backends = (SearchFilter, )
-    search_fields = ('^name' )
+    search_fields = ('name', )

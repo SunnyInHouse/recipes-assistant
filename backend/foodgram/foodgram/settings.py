@@ -146,5 +146,5 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 
         'foodgram.pagination.CustomPageNumberPagination',
         'PAGE_SIZE': 5,
-
+    'SEARCH_PARAM': 'name',
 }
