@@ -1,10 +1,10 @@
 
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny
-from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
 
-from .models import Ingredient, Tag
-from .serializers import IngredientSerielizer, TagSerielizer
+from .models import Ingredient, Recipe, Tag
+from .serializers import IngredientSerielizer, RecipeSerializer, TagSerielizer
 
 
 class TagViewset(ReadOnlyModelViewSet):
@@ -32,3 +32,15 @@ class IngredientViewset(ReadOnlyModelViewSet):
     pagination_class = None
     filter_backends = (SearchFilter, )
     search_fields = ('name', )
+
+
+class RecipeViewset(ModelViewSet):
+    """
+    Вьюсет для работы с запросами о рецептах - просмотр списка рецептов,
+    просмотр отдельного рецепта, создание, изменение и удаление рецепта.
+    URL - /recipes/.
+    """
+
+    permission_classes = (AllowAny,)
+    serializer_class = RecipeSerializer
+    queryset = Recipe.objects.all()

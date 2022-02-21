@@ -115,6 +115,7 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
+        through='TagRecipe',
         verbose_name='Теги рецепта',
         related_name='recipes',
     )
@@ -129,12 +130,6 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ('-pub_date',)
-        # constraints = [
-        #     models.CheckConstraint(
-        #         check=models.Q(ingridients.through.objects.count()__gte=1),
-        #         name=('в рецепте должно быть более 1 ингридиента')
-        #     ),
-        # ]
 
     def __str__(self):
         return f'{self.name}, автор {self.author}'
@@ -194,6 +189,37 @@ class IngridientRecipe(models.Model):
     def __str__(self):
         return (f'Для рецепта {self.recipe} необходимо {self.quantity} '
                 f'{self.ingridient}')
+
+
+class TagRecipe(models.Model):
+    """
+    Модель для обеспечения связи рецепта и тегов рецепта.
+    """
+
+    tag = models.ForeignKey(
+        Tag,
+        verbose_name='тег',
+        on_delete=models.CASCADE,
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        verbose_name='Рецепт',
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        verbose_name = 'Тег в рецепте'
+        verbose_name_plural = 'Теги в рецепте'
+        ordering = ('tag__name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tag', 'recipe'],
+                name='уникальность тега в рецепте',
+            ),
+        ]
+
+    def __str__(self):
+        return f'В рецепте {self.recipe} присутсвует тег {self.tag}'
 
 
 class FavoriteList(models.Model):
