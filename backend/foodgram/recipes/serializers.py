@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Tag
+from .models import Ingredient, Tag
 
 
 class TagSerielizer(serializers.ModelSerializer):
@@ -14,5 +14,19 @@ class TagSerielizer(serializers.ModelSerializer):
             'id',
             'name',
             'color',
-            'slug'
+            'slug',
+        )
+
+
+class IngredientSerielizer(serializers.ModelSerializer):
+    """
+    Сериализатор для получения списка ингридиентов и отдельного ингридиента.
+    """
+
+    class Meta:
+        model = Ingredient
+        fields = (
+            'id',
+            'name',
+            'measurement_unit',
         )

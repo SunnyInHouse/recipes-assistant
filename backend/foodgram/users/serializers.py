@@ -1,6 +1,6 @@
 # from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import password_changed
-from rest_framework import serializers
+from rest_framework import serializers 
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
 from users.models import Subscribe, User
@@ -161,6 +161,7 @@ class RecipesForSerializers(serializers.ModelSerializer):
             'cooking_time',
         )
 
+
 class ListSubscriptionsSerializer(UserSerializer):
     """
     Сериализатор для обработки запросов на получение списка пользователей, на
@@ -209,7 +210,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
     пользователя.
     """
 
-    queryset=User.objects.all()
+    queryset = User.objects.all()
     user_author = serializers.PrimaryKeyRelatedField(queryset=queryset)
     user_subscriber = serializers.PrimaryKeyRelatedField(queryset=queryset)
 
@@ -245,7 +246,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
         """
         data = instance.user_author
         return ListSubscriptionsSerializer(
-            data, 
+            data,
             context={
                 'request': self.context.get('request'),
             }

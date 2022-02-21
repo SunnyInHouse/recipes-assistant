@@ -10,11 +10,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
+from foodgram.pagination import CustomPageNumberPagination
+
 from .models import Subscribe, User
 from .serializers import (GetTokenSerializer, ListSubscriptionsSerializer,
-                          UserChangePasswordSerializer, UserSerializer,
-                          SubscribeSerializer)
-from foodgram.pagination import CustomPageNumberPagination
+                          SubscribeSerializer, UserChangePasswordSerializer,
+                          UserSerializer)
 
 
 class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
@@ -26,12 +27,11 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 
     name = 'Обработка запросов о пользователях'
     description = 'Обработка запросов о пользователях'
-    serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)
+    serializer_class = UserSerializer
     queryset = User.objects.all()
     lookup_field = 'id'
     pagination_class = CustomPageNumberPagination
-    
 
     def get_serializer_class(self):
         if self.action == 'set_password':
@@ -94,9 +94,9 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         url_path='subscriptions',
         detail=False
     )
-    def subscriptions(self,request):
+    def subscriptions(self, request):
         """
-        Метод для обработки GET запросов на получение списка пользователей, на 
+        Метод для обработки GET запросов на получение списка пользователей, на
         которых подписан текущий пользователь. В выдачу добавляются рецепты.
         URL - /users/subscriptions/.
         """
@@ -115,8 +115,8 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         )
 
     @action(
-        methods=['POST', 'DELETE' ],
-        url_path='(?P<id>\d+)/subscribe',
+        methods=['POST', 'DELETE'],
+        url_path='(?P<id>)/subscribe',
         detail=False,
     )
     def subscribe(self, request, id):
@@ -148,10 +148,13 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
             )
         # обработка запроса DELETE
         try:
-            subscribe = Subscribe.objects.get(user_subscriber=request.user, user_author=user_author)
+            subscribe = Subscribe.objects.get(
+                user_subscriber=request.user,
+                user_author=user_author
+            )
         except Subscribe.DoesNotExist:
             return Response(
-                {'errors': 'Указанной подписки не существует.',},
+                {'errors': 'Указанной подписки не существует.', },
                 status=status.HTTP_400_BAD_REQUEST
             )
         subscribe.delete()
