@@ -1,3 +1,8 @@
+"""
+Вспомогательные функции и классы для приложения.
+"""
+
+
 from django.contrib.auth.password_validation import (
     password_validators_help_texts, validate_password)
 from rest_framework import serializers

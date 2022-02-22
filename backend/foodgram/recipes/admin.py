@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import (FavoriteList, Ingredient, IngridientRecipe, Recipe,
+from .models import (FavoriteList, Ingredient, IngredientInRecipe, Recipe,
                      ShoppingList, Tag, TagRecipe)
 
 admin.site.site_header = 'Администрирование Foodgram - сайта рецептов'
@@ -18,23 +18,23 @@ class IngredientInline(admin.TabularInline):
     fields = ('name', 'measurement_unit',)
 
 
-class IngridientRecipeAdmin(admin.ModelAdmin):
-    list_display = ('ingridient', 'recipe', 'quantity', '_quantity_unit')
-    list_display_links = ('ingridient', 'recipe',)
+class IngredientInRecipeAdmin(admin.ModelAdmin):
+    list_display = ('ingredient', 'recipe', 'quantity', '_quantity_unit')
+    list_display_links = ('ingredient', 'recipe',)
     inline = [
         IngredientInline,
     ]
 
     @admin.display()
     def _quantity_unit(self, obj):
-        return obj.ingridient.measurement_unit
+        return obj.ingredient.measurement_unit
 
     _quantity_unit.short_description = 'единица измерения'
 
 
-class IngredientRecipeInline(admin.TabularInline):
-    model = IngridientRecipe
-    autocomplete_fields = ('ingridient',)
+class IngredientInRecipeInline(admin.TabularInline):
+    model = IngredientInRecipe
+    autocomplete_fields = ('ingredient',)
 
 
 class TagAdmin(admin.ModelAdmin):
@@ -59,12 +59,12 @@ class RecipeAdmin(admin.ModelAdmin):
         'name',
         'author',
         '_get_number_additions_to_favourite',
-        '_get_number_ingridients',
+        '_get_number_ingredients',
         )
     list_filter = ('name', 'author', 'tags')
     search_fields = ('name',)
     inlines = [
-        IngredientRecipeInline,
+        IngredientInRecipeInline,
         TagRecipeInline,
     ]
     autocomplete_fields = ('author', 'tags',)
@@ -100,7 +100,7 @@ class FavoriteListAdmin(admin.ModelAdmin):
 
 admin.site.register(FavoriteList, FavoriteListAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(IngridientRecipe, IngridientRecipeAdmin)
+admin.site.register(IngredientInRecipe, IngredientInRecipeAdmin)
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(ShoppingList, ShoppingListAdmin)

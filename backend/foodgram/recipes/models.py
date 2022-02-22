@@ -119,9 +119,9 @@ class Recipe(models.Model):
         verbose_name='Теги рецепта',
         related_name='recipes',
     )
-    ingridients = models.ManyToManyField(
+    ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngridientRecipe',
+        through='IngredientInRecipe',
         verbose_name='Ингридиент с указанием количества для рецепта',
         related_name='recipes',
     )
@@ -142,30 +142,32 @@ class Recipe(models.Model):
 
     _get_number_additions_to_favourite.short_description = 'в избранном у'
 
-    def _get_number_ingridients(self):
+    def _get_number_ingredients(self):
         """
         Функция вычисляет число ингридиентов в рецепте.
         """
-        return self.ingridients.through.objects.count()
+        return self.ingredients.count()
 
-    _get_number_ingridients.short_description = 'количество ингридиентов'
+    _get_number_ingredients.short_description = 'количество ингридиентов'
 
 
-class IngridientRecipe(models.Model):
+class IngredientInRecipe(models.Model):
     """
     Модель, обеспечивающая связь ингридиента и его количества, необходимого
     для конкретного рецепта.
     """
 
-    ingridient = models.ForeignKey(
+    ingredient = models.ForeignKey(
         Ingredient,
         verbose_name='Ингридиент',
         on_delete=models.CASCADE,
+        related_name='ingredient_recipe',
     )
     recipe = models.ForeignKey(
         Recipe,
         verbose_name='Рецепт',
         on_delete=models.CASCADE,
+        related_name='ingredient_recipe'
     )
     quantity = models.PositiveSmallIntegerField(
         'Количество ингридиента в выбранных единицах',
@@ -177,7 +179,7 @@ class IngridientRecipe(models.Model):
         ordering = ('recipe__name',)
         constraints = [
             models.UniqueConstraint(
-                fields=['ingridient', 'recipe'],
+                fields=['ingredient', 'recipe'],
                 name='уникальность ингридиента в рецепте',
             ),
             models.CheckConstraint(
@@ -188,7 +190,7 @@ class IngridientRecipe(models.Model):
 
     def __str__(self):
         return (f'Для рецепта {self.recipe} необходимо {self.quantity} '
-                f'{self.ingridient}')
+                f'{self.ingredient}')
 
 
 class TagRecipe(models.Model):
@@ -200,11 +202,13 @@ class TagRecipe(models.Model):
         Tag,
         verbose_name='тег',
         on_delete=models.CASCADE,
+        related_name='tag_recipe',
     )
     recipe = models.ForeignKey(
         Recipe,
         verbose_name='Рецепт',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='tag_recipe',
     )
 
     class Meta:
@@ -271,5 +275,5 @@ class ShoppingList(models.Model):
     def __str__(self):
         return f'Список покупок пользователя {self.user}'
 
-    # def _get_list_of_ingridients(self):
+    # def _get_list_of_ingredients(self):
     #     pass
