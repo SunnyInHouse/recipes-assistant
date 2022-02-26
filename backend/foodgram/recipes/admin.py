@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (FavoriteList, Ingredient, IngredientInRecipe, Recipe,
-                     ShoppingList, Tag, TagRecipe)
+                     ShoppingList, Tag,)
 
 admin.site.site_header = 'Администрирование Foodgram - сайта рецептов'
 
@@ -45,13 +45,13 @@ class TagAdmin(admin.ModelAdmin):
     }
 
 
-class TagRecipeAdmin(admin.ModelAdmin):
-    list_display = ('tag', 'recipe',)
+# class TagRecipeAdmin(admin.ModelAdmin):
+#     list_display = ('tag', 'recipe',)
 
 
-class TagRecipeInline(admin.TabularInline):
-    model = TagRecipe
-    autocomplete_fields = ('tag',)
+# class TagRecipeInline(admin.TabularInline):
+#     model = TagRecipe
+#     autocomplete_fields = ('tag',)
 
 
 class RecipeAdmin(admin.ModelAdmin):
@@ -65,7 +65,7 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     inlines = [
         IngredientInRecipeInline,
-        TagRecipeInline,
+        # TagRecipeInline,
     ]
     autocomplete_fields = ('author', 'tags',)
 
@@ -104,4 +104,4 @@ admin.site.register(IngredientInRecipe, IngredientInRecipeAdmin)
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(ShoppingList, ShoppingListAdmin)
-admin.site.register(TagRecipe)
+# admin.site.register(TagRecipe)

@@ -1,4 +1,3 @@
-# from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import password_changed
 from rest_framework import serializers 
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
@@ -146,7 +145,7 @@ class GetTokenSerializer(serializers.Serializer):
         )
 
 
-class RecipesForSerializers(serializers.ModelSerializer):
+class RecipesForUserSerializers(serializers.ModelSerializer):
     """
     Сериализатор для получения данных о рецептах для выдачи их в списке
     подписок.
@@ -194,7 +193,7 @@ class ListSubscriptionsSerializer(UserSerializer):
         limit = request.query_params.get('recipes_limit')
         if limit:
             recipes = recipes[:int(limit)]
-        return RecipesForSerializers(recipes, many=True).data
+        return RecipesForUserSerializers(recipes, many=True).data
 
     def get_recipes_count(self, obj):
         """

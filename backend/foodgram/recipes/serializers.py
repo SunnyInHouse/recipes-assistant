@@ -1,11 +1,14 @@
 from rest_framework import serializers
 
 from .models import (FavoriteList, Ingredient, IngredientInRecipe, Recipe, Tag,
-    TagRecipe, ShoppingList)
+    ShoppingList)
 
 from users.serializers import UserSerializer
 
 from .services import check_is_it_in
+
+from .fields import Base64ImageField
+
 
 class TagSerielizer(serializers.ModelSerializer):
     """
@@ -57,16 +60,17 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         )
 
 
-class RecipeSerializer(serializers.ModelSerializer):
+class RecipeListGetSerializer(serializers.ModelSerializer):
     """
-    Сериалиализатор для обработки запросов о рецептах.
+    Сериалиализатор для обработки GET запросов о рецептах.
     """
 
     author = UserSerializer(read_only=True)
     tags = TagSerielizer(many=True, read_only=True)
     ingredients = IngredientInRecipeSerializer(
         many=True,
-        source='ingredient_recipe'
+        source='ingredient_recipe',
+        read_only=True
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -98,25 +102,69 @@ class RecipeSerializer(serializers.ModelSerializer):
         """
         return check_is_it_in(self, obj, ShoppingList)
 
+
+class RecipeCreateUpdateDelSerializer(serializers.ModelSerializer):
+    """
+    Сериалиализатор для обработки POST, UPDATE, DELETE запросов на создание рецепта.
+    """
+
+    image = Base64ImageField()
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True
+    )
+    ingredients = IngredientInRecipeSerializer(many=True)
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'ingredients',
+            'tags',
+            'image',
+            'name',
+            'text',
+            'cooking_time',
+        )
+
+    def validate(self, data):
+        return data
+
     def create(self, validated_data):
         """
-        Создание рецепта.
+        Функция для создания рецепта со списком ингридиентов и тегами.
         """
-        tags = validated_data.pop('tags')
-        print(tags)
         ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(**validated_data)
-        for tag in tags:
-            current_tag, status = Tag.objects.get(**tag)
-            TagRecipe.objects.create(
-                tag = current_tag,
-                recipe = recipe
+        recipe = super().create(validated_data)
+        IngredientInRecipe.objects.bulk_create(
+            IngredientInRecipe(
+                ingredient_id = ingredient['ingredient']['id'],
+                quantity = ingredient['quantity'],
+                recipe=recipe
             )
-        for ingredient in ingredients:
-            current_ingredient, status = Ingredient.objects.get_or_create(ingredient['id'])
-            IngredientInRecipe.objects.create(
-                ingredient = current_ingredient,
-                recipe = recipe,
-                quantity = ingredient['amount']
-            )
+                for ingredient in ingredients
+        )
         return recipe
+
+    def update(self, instance, validated_data):
+        """
+        Функция для обновления существующего рецепта.
+        """
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.image = validated_data.get('image', instance.image)
+        instance.cooking_time = (
+            validated_data.get('cooking_time', instance.cooking_time)
+        )
+        instance.tags.set(validated_data.get('tags', instance.tags))
+        instance.ingredients = ...
+  
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        """
+        Функция для вывода данных сериализатором.
+        """
+        return RecipeListGetSerializer(instance, context={
+                'request': self.context.get('request'),
+            }).data
+

@@ -115,7 +115,6 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        through='TagRecipe',
         verbose_name='Теги рецепта',
         related_name='recipes',
     )
@@ -193,37 +192,37 @@ class IngredientInRecipe(models.Model):
                 f'{self.ingredient}')
 
 
-class TagRecipe(models.Model):
-    """
-    Модель для обеспечения связи рецепта и тегов рецепта.
-    """
+# class TagRecipe(models.Model):
+#     """
+#     Модель для обеспечения связи рецепта и тегов рецепта.
+#     """
 
-    tag = models.ForeignKey(
-        Tag,
-        verbose_name='тег',
-        on_delete=models.CASCADE,
-        related_name='tag_recipe',
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        verbose_name='Рецепт',
-        on_delete=models.CASCADE,
-        related_name='tag_recipe',
-    )
+#     tag = models.ForeignKey(
+#         Tag,
+#         verbose_name='тег',
+#         on_delete=models.CASCADE,
+#         related_name='tag_recipe',
+#     )
+#     recipe = models.ForeignKey(
+#         Recipe,
+#         verbose_name='Рецепт',
+#         on_delete=models.CASCADE,
+#         related_name='tag_recipe',
+#     )
 
-    class Meta:
-        verbose_name = 'Тег в рецепте'
-        verbose_name_plural = 'Теги в рецепте'
-        ordering = ('tag__name',)
-        constraints = [
-            models.UniqueConstraint(
-                fields=['tag', 'recipe'],
-                name='уникальность тега в рецепте',
-            ),
-        ]
+#     class Meta:
+#         verbose_name = 'Тег в рецепте'
+#         verbose_name_plural = 'Теги в рецепте'
+#         ordering = ('tag__name',)
+#         constraints = [
+#             models.UniqueConstraint(
+#                 fields=['tag', 'recipe'],
+#                 name='уникальность тега в рецепте',
+#             ),
+#         ]
 
-    def __str__(self):
-        return f'В рецепте {self.recipe} присутсвует тег {self.tag}'
+#     def __str__(self):
+#         return f'В рецепте {self.recipe} присутсвует тег {self.tag}'
 
 
 class FavoriteList(models.Model):

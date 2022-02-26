@@ -2,9 +2,13 @@
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
+from rest_framework import status
+from rest_framework.response import Response
 
 from .models import Ingredient, Recipe, Tag
-from .serializers import IngredientSerielizer, RecipeSerializer, TagSerielizer
+from .serializers import (IngredientSerielizer, RecipeListGetSerializer,
+                        RecipeCreateUpdateDelSerializer, 
+                        TagSerielizer)
 
 
 class TagViewset(ReadOnlyModelViewSet):
@@ -42,5 +46,22 @@ class RecipeViewset(ModelViewSet):
     """
 
     permission_classes = (AllowAny,)
-    serializer_class = RecipeSerializer
+    # serializer_class = RecipeSerializer
     queryset = Recipe.objects.all()
+
+    def get_serializer_class(self):
+        if self.action in ('create', 'update', 'destroy', 'partial_update'):
+            return RecipeCreateUpdateDelSerializer
+        if self.action in ('list', 'retrieve'):
+            return RecipeListGetSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
+
+#  задача view - данные собрать, сдоеать запросы и тп (отвечает за получение даннх любым способом)
+# задача сериализатора - эти данные правильно сохранить, работать с подготовленными данными
+
+
+# максимально валидация в модели 
