@@ -6,8 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .models import Ingredient, Recipe, Tag
-from .serializers import (IngredientSerielizer, RecipeListGetSerializer,
-                        RecipeCreateUpdateDelSerializer, 
+from .serializers import (IngredientSerielizer, RecipeSerializer, 
                         TagSerielizer)
 
 
@@ -46,19 +45,14 @@ class RecipeViewset(ModelViewSet):
     """
 
     permission_classes = (AllowAny,)
-    # serializer_class = RecipeSerializer
+    serializer_class = RecipeSerializer
     queryset = Recipe.objects.all()
-
-    def get_serializer_class(self):
-        if self.action in ('create', 'update', 'destroy', 'partial_update'):
-            return RecipeCreateUpdateDelSerializer
-        if self.action in ('list', 'retrieve'):
-            return RecipeListGetSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+#  написать фильтры, пагинацию, пермишн
 
-
+# добавить функции для favourite shopping_list
 
 #  задача view - данные собрать, сдоеать запросы и тп (отвечает за получение даннх любым способом)
 # задача сериализатора - эти данные правильно сохранить, работать с подготовленными данными

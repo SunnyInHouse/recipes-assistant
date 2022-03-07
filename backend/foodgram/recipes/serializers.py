@@ -1,3 +1,4 @@
+from xml.dom import ValidationErr
 from rest_framework import serializers
 
 from .models import (FavoriteList, Ingredient, IngredientInRecipe, Recipe, Tag,
@@ -6,6 +7,7 @@ from .models import (FavoriteList, Ingredient, IngredientInRecipe, Recipe, Tag,
 from users.serializers import UserSerializer
 
 from .services import check_is_it_in
+from . import services
 
 from .fields import Base64ImageField
 
@@ -27,7 +29,7 @@ class TagSerielizer(serializers.ModelSerializer):
 
 class IngredientSerielizer(serializers.ModelSerializer):
     """
-    Сериализатор для получения списка ингридиентов и отдельного ингридиента.
+    Сериализатор для получения списка ингредиентов и отдельного ингредиента.
     """
 
     class Meta:
@@ -41,7 +43,7 @@ class IngredientSerielizer(serializers.ModelSerializer):
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для получения списка ингридиентов в рецепте с указанием
+    Сериализатор для получения списка ингредиентов в рецепте с указанием
     количества.
     """
 
@@ -60,18 +62,20 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         )
 
 
-class RecipeListGetSerializer(serializers.ModelSerializer):
+class RecipeSerializer(serializers.ModelSerializer):
     """
-    Сериалиализатор для обработки GET запросов о рецептах.
+    Сериалиализатор для обработки запросов о рецептах.
     """
 
     author = UserSerializer(read_only=True)
-    tags = TagSerielizer(many=True, read_only=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True
+    )
     ingredients = IngredientInRecipeSerializer(
         many=True,
-        source='ingredient_recipe',
-        read_only=True
+        source='ingredient_recipe'
     )
+    image = Base64ImageField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -94,55 +98,65 @@ class RecipeListGetSerializer(serializers.ModelSerializer):
         """
         Функция проверяет, добавлен ли рецепт в избранное.
         """
-        return check_is_it_in(self, obj, FavoriteList)
+        return services.check_is_it_in(self, obj, FavoriteList)
 
     def get_is_in_shopping_cart(self, obj):
         """
         Функция проверяет, добавлен ли рецепт в список покупок.
         """
-        return check_is_it_in(self, obj, ShoppingList)
+        return services.check_is_it_in(self, obj, ShoppingList)
 
+    def validate_tags(self, value):
+        """
+        Функция для валидации тегов.
+        """
+        if len(value)==0:
+            raise serializers.ValidationError('Укажите теги рецепта.')
+        for tag in value:
+            if tag not in Tag.objects.all():
+                raise serializers.ValidationError(
+                    'Указанного тега не существует.'
+                )
+        return value
 
-class RecipeCreateUpdateDelSerializer(serializers.ModelSerializer):
-    """
-    Сериалиализатор для обработки POST, UPDATE, DELETE запросов на создание рецепта.
-    """
-
-    image = Base64ImageField()
-    tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(), many=True
-    )
-    ingredients = IngredientInRecipeSerializer(many=True)
-
-    class Meta:
-        model = Recipe
-        fields = (
-            'ingredients',
-            'tags',
-            'image',
-            'name',
-            'text',
-            'cooking_time',
-        )
+    def validate_ingredients(self, value):
+        """
+        Функция для валидации словаря ингредиентов. Проверяет, что в переданном
+        словаре присутствуют ингредиенты, существующие в базе данных, и для
+        них указано корректное количество (более 0).
+        """
+        if len(value)==0:
+            raise serializers.ValidationError(
+                'Укажите ингредиенты для рецепта.'
+            )
+        for ingredient in value:
+            ingredient_id = ingredient['ingredient']['id']
+            if not Ingredient.objects.filter(id=ingredient_id).exists():
+                raise serializers.ValidationError(
+                    f"Ингредиента с id {ingredient_id} не существует в базе данных."
+                )
+            if ingredient['quantity'] <= 0:
+                raise serializers.ValidationError(
+                    f"Укажите корректное количество ингредиента с id {ingredient_id}."
+                )
+        # проверка уникальности ингредиента в рецепте
+        return value
 
     def validate(self, data):
+        """
+        Функция для валидации входящих данных.
+        """
+
         return data
 
     def create(self, validated_data):
         """
-        Функция для создания рецепта со списком ингридиентов и тегами.
+        Функция для создания рецепта со списком ингредиентов и тегами.
         """
-        ingredients = validated_data.pop('ingredients')
-        recipe = super().create(validated_data)
-        IngredientInRecipe.objects.bulk_create(
-            IngredientInRecipe(
-                ingredient_id = ingredient['ingredient']['id'],
-                quantity = ingredient['quantity'],
-                recipe=recipe
-            )
-                for ingredient in ingredients
-        )
-        return recipe
+        ingredients = validated_data.pop('ingredient_recipe')
+        new_recipe = super().create(validated_data)
+        services.add_ingredients_in_recipe(new_recipe, ingredients)
+        return new_recipe
 
     def update(self, instance, validated_data):
         """
@@ -155,16 +169,18 @@ class RecipeCreateUpdateDelSerializer(serializers.ModelSerializer):
             validated_data.get('cooking_time', instance.cooking_time)
         )
         instance.tags.set(validated_data.get('tags', instance.tags))
-        instance.ingredients = ...
-  
+        instance.ingredients.clear()
         instance.save()
+
+        services.add_ingredients_in_recipe(instance, validated_data['ingredient_recipe'])
+        instance.save()
+
         return instance
 
     def to_representation(self, instance):
         """
         Функция для вывода данных сериализатором.
         """
-        return RecipeListGetSerializer(instance, context={
-                'request': self.context.get('request'),
-            }).data
-
+        result = super().to_representation(instance)
+        result['tags'] = TagSerielizer(instance.tags.all(), many=True).data
+        return result

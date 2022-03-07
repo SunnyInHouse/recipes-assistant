@@ -5,7 +5,7 @@ from django.db import models
 
 class Ingredient(models.Model):
     """
-    Модель для описания ингридиентов, входящих в рецепты.
+    Модель для описания ингредиентов, входящих в рецепты.
     """
 
     name = models.CharField(
@@ -13,18 +13,18 @@ class Ingredient(models.Model):
         max_length=200,
     )
     measurement_unit = models.CharField(
-        'Единица измерения ингридиента',
+        'Единица измерения ингредиента',
         max_length=200,
     )
 
     class Meta:
-        verbose_name = 'Ингридиент'
-        verbose_name_plural = 'Ингридиенты'
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
         ordering = ('name',)
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'measurement_unit'],
-                name='уникальность пары ингридиент-единица измерения',
+                name='уникальность пары ингредиент-единица измерения',
             ),
         ]
 
@@ -101,7 +101,6 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления в минутах',
-        default=1,
         validators=[
             validators.MinValueValidator(
                 1,
@@ -121,7 +120,7 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient,
         through='IngredientInRecipe',
-        verbose_name='Ингридиент с указанием количества для рецепта',
+        verbose_name='Ингредиент с указанием количества для рецепта',
         related_name='recipes',
     )
 
@@ -143,22 +142,22 @@ class Recipe(models.Model):
 
     def _get_number_ingredients(self):
         """
-        Функция вычисляет число ингридиентов в рецепте.
+        Функция вычисляет число ингредиентов в рецепте.
         """
         return self.ingredients.count()
 
-    _get_number_ingredients.short_description = 'количество ингридиентов'
+    _get_number_ingredients.short_description = 'количество ингредиентов'
 
 
 class IngredientInRecipe(models.Model):
     """
-    Модель, обеспечивающая связь ингридиента и его количества, необходимого
+    Модель, обеспечивающая связь ингредиента и его количества, необходимого
     для конкретного рецепта.
     """
 
     ingredient = models.ForeignKey(
         Ingredient,
-        verbose_name='Ингридиент',
+        verbose_name='Ингредиент',
         on_delete=models.CASCADE,
         related_name='ingredient_recipe',
     )
@@ -169,60 +168,29 @@ class IngredientInRecipe(models.Model):
         related_name='ingredient_recipe'
     )
     quantity = models.PositiveSmallIntegerField(
-        'Количество ингридиента в выбранных единицах',
+        'Количество ингредиента в выбранных единицах',
+        validators=[
+            validators.MinValueValidator(
+                0,
+                message='Количество ингредиента должно быть более 0.'
+            )
+        ],
     )
 
     class Meta:
-        verbose_name = 'Ингридиент-количество для рецепта'
-        verbose_name_plural = 'Ингридиенты с количествами для рецепта'
+        verbose_name = 'Ингредиент-количество для рецепта'
+        verbose_name_plural = 'Ингредиенты с количествами для рецепта'
         ordering = ('recipe__name',)
         constraints = [
             models.UniqueConstraint(
                 fields=['ingredient', 'recipe'],
-                name='уникальность ингридиента в рецепте',
-            ),
-            models.CheckConstraint(
-                check=models.Q(quantity__gt=0),
-                name=('количество ингридиента должно быть больше 0')
+                name='уникальность ингредиента в рецепте',
             ),
         ]
 
     def __str__(self):
         return (f'Для рецепта {self.recipe} необходимо {self.quantity} '
                 f'{self.ingredient}')
-
-
-# class TagRecipe(models.Model):
-#     """
-#     Модель для обеспечения связи рецепта и тегов рецепта.
-#     """
-
-#     tag = models.ForeignKey(
-#         Tag,
-#         verbose_name='тег',
-#         on_delete=models.CASCADE,
-#         related_name='tag_recipe',
-#     )
-#     recipe = models.ForeignKey(
-#         Recipe,
-#         verbose_name='Рецепт',
-#         on_delete=models.CASCADE,
-#         related_name='tag_recipe',
-#     )
-
-#     class Meta:
-#         verbose_name = 'Тег в рецепте'
-#         verbose_name_plural = 'Теги в рецепте'
-#         ordering = ('tag__name',)
-#         constraints = [
-#             models.UniqueConstraint(
-#                 fields=['tag', 'recipe'],
-#                 name='уникальность тега в рецепте',
-#             ),
-#         ]
-
-#     def __str__(self):
-#         return f'В рецепте {self.recipe} присутсвует тег {self.tag}'
 
 
 class FavoriteList(models.Model):
