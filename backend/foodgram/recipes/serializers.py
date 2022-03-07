@@ -123,31 +123,40 @@ class RecipeSerializer(serializers.ModelSerializer):
         """
         Функция для валидации словаря ингредиентов. Проверяет, что в переданном
         словаре присутствуют ингредиенты, существующие в базе данных, и для
-        них указано корректное количество (более 0).
+        них указано корректное количество (более 0). Также присутствует
+        проверка попытки добавления повторяющихся элементов.
         """
         if len(value)==0:
             raise serializers.ValidationError(
                 'Укажите ингредиенты для рецепта.'
             )
+        set_ingr_id = set()
         for ingredient in value:
-            ingredient_id = ingredient['ingredient']['id']
+            ingredient_id = ingredient['ingredient']['id']   
             if not Ingredient.objects.filter(id=ingredient_id).exists():
                 raise serializers.ValidationError(
-                    f"Ингредиента с id {ingredient_id} не существует в базе данных."
+                    f"Ингредиента с id {ingredient_id} нет в базе данных."
                 )
+            if ingredient_id in set_ingr_id:
+                raise serializers.ValidationError(
+                    "В рецепте не может быть нескольких одинаковых "
+                    "ингредиентов. Повторяющийся ингредиент - ингредиент с "
+                    f"id {ingredient_id}."
+                )
+            set_ingr_id.add(ingredient_id)
             if ingredient['quantity'] <= 0:
                 raise serializers.ValidationError(
-                    f"Укажите корректное количество ингредиента с id {ingredient_id}."
+                    "Количество ингредиента должно быть более 0. Укажите "
+                    f"корректное количество ингредиента с id {ingredient_id}."
                 )
-        # проверка уникальности ингредиента в рецепте
         return value
 
-    def validate(self, data):
-        """
-        Функция для валидации входящих данных.
-        """
+    # def validate(self, data):
+    #     """
+    #     Функция для валидации входящих данных.
+    #     """
 
-        return data
+    #     return data
 
     def create(self, validated_data):
         """
