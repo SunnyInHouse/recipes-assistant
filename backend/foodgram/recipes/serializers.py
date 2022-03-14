@@ -6,7 +6,6 @@ from .models import (FavoriteList, Ingredient, IngredientInRecipe, Recipe, Tag,
 
 from users.serializers import UserSerializer
 
-from .services import check_is_it_in
 from . import services
 
 from .fields import Base64ImageField
@@ -151,12 +150,12 @@ class RecipeSerializer(serializers.ModelSerializer):
                 )
         return value
 
-    # def validate(self, data):
-    #     """
-    #     Функция для валидации входящих данных.
-    #     """
-
-    #     return data
+    def validate(self, data):
+        """
+        Функция для валидации входящих данных.
+        """
+        
+        return data
 
     def create(self, validated_data):
         """

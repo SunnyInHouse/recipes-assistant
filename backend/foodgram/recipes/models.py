@@ -136,7 +136,7 @@ class Recipe(models.Model):
         """
         Функция вычисляет число добавления рецептов в избранное.
         """
-        return self.favourites.count()
+        return self.favorites.count()
 
     _get_number_additions_to_favourite.short_description = 'в избранном у'
 
@@ -201,12 +201,12 @@ class FavoriteList(models.Model):
         settings.AUTH_USER_MODEL,
         verbose_name='Автор списка избранного',
         on_delete=models.CASCADE,
-        related_name='favourites',
+        related_name='favorites',
     )
     recipes = models.ManyToManyField(
         Recipe,
         verbose_name='Рецепты',
-        related_name='favourites',
+        related_name='favorites',
     )
 
     class Meta():
