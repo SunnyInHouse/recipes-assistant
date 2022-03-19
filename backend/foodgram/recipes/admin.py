@@ -1,9 +1,7 @@
 from django.contrib import admin
 
 from .models import (FavoriteList, Ingredient, IngredientInRecipe, Recipe,
-                     ShoppingList, Tag,)
-
-admin.site.site_header = 'Администрирование Foodgram - сайта рецептов'
+                     ShoppingList, Tag)
 
 
 class IngredientAdmin(admin.ModelAdmin):

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django_filters',
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -145,7 +146,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_PAGINATION_CLASS': 
-        'foodgram.pagination.CustomPageNumberPagination',
+        'api.pagination.CustomPageNumberPagination',
         'PAGE_SIZE': 5,
     'SEARCH_PARAM': 'name',
 }

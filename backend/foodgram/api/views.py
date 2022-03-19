@@ -1,21 +1,28 @@
-from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.mixins import (CreateModelMixin, ListModelMixin,
                                    RetrieveModelMixin)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import (GenericViewSet, ModelViewSet,
+                                     ReadOnlyModelViewSet)
 
-from foodgram.pagination import CustomPageNumberPagination
+from recipes.models import FavoriteList, Ingredient, Recipe, ShoppingList, Tag
+from users.models import Subscribe, User
 
-from .models import Subscribe, User
-from .serializers import (GetTokenSerializer, ListSubscriptionsSerializer,
-                          SubscribeSerializer, UserChangePasswordSerializer,
-                          UserSerializer)
+from . import services
+from .filters import RecipeFilter
+from .pagination import CustomPageNumberPagination
+from .serializers import (FavoriteSerializer, GetTokenSerializer,
+                          IngredientSerielizer, ListSubscriptionsSerializer,
+                          RecipeSerializer, ShoppingListSerializer,
+                          SubscribeSerializer, TagSerielizer,
+                          UserChangePasswordSerializer, UserSerializer)
 
 
 class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
@@ -27,6 +34,7 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 
     name = 'Обработка запросов о пользователях'
     description = 'Обработка запросов о пользователях'
+
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
     queryset = User.objects.all()
@@ -63,6 +71,7 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         user = request.user
         serializer = self.get_serializer(user, data=request.data)
         if serializer.is_valid():
+            serializer.save()
             return Response(
                 status=status.HTTP_204_NO_CONTENT
             )
@@ -116,7 +125,7 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 
     @action(
         methods=['POST', 'DELETE'],
-        url_path='(?P<id>)/subscribe',
+        url_path='(?P<id>[^/.]+)/subscribe',
         detail=False,
     )
     def subscribe(self, request, id):
@@ -126,39 +135,9 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         URL = /users/{id}/subscribe/.
         """
 
-        user_author = get_object_or_404(User, id=int(id))
-
-        data = {
-            'user_subscriber': request.user.id,
-            'user_author': user_author.id,
-        }
-
-        serializer = self.get_serializer(data=data)
-
-        if request.method == 'POST':
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        # обработка запроса DELETE
-        try:
-            subscribe = Subscribe.objects.get(
-                user_subscriber=request.user,
-                user_author=user_author
-            )
-        except Subscribe.DoesNotExist:
-            return Response(
-                {'errors': 'Указанной подписки не существует.', },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        subscribe.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return services.add_del_smth_to_somewhere(
+            request, id, self.get_serializer, User, Subscribe
+        )
 
 
 class GetTokenView(ObtainAuthToken):
@@ -212,3 +191,111 @@ class DelTokenView(APIView):
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class TagViewset(ReadOnlyModelViewSet):
+    """
+    Вьюсет для получения списка тегов и отдельного тега.
+    URL = /tags/.
+    """
+
+    name = 'Обработка запросов о тегах'
+    description = 'Обработка запросов о тегах'
+
+    permission_classes = (AllowAny,)
+    serializer_class = TagSerielizer
+    queryset = Tag.objects.all()
+    pagination_class = None
+
+
+class IngredientViewset(ReadOnlyModelViewSet):
+    """
+    Вьюсет для получения списка ингредиентов и отдельного ингредиента.
+    Возможен поиск ингредиентов по имени (параметр name в строке запроса).
+    URL = /tags/.
+    """
+
+    permission_classes = (AllowAny,)
+    serializer_class = IngredientSerielizer
+    queryset = Ingredient.objects.all()
+    pagination_class = None
+    filter_backends = (SearchFilter, )
+    search_fields = ('name', )
+
+
+class RecipeViewset(ModelViewSet):
+    """
+    Вьюсет для работы с запросами о рецептах - просмотр списка рецептов,
+    просмотр отдельного рецепта, создание, изменение и удаление рецепта.
+    URL - /recipes/.
+    """
+
+    name = 'Обработка запросов о рецептах'
+    description = 'Обработка запросов о рецептах'
+
+    permission_classes = (AllowAny,)
+    queryset = Recipe.objects.all()
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = RecipeFilter
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action == 'favorite':
+            return FavoriteSerializer
+        if self.action == 'shopping_cart':
+            return ShoppingListSerializer
+        return RecipeSerializer
+#  написать пермишн -
+#  задача view - данные собрать, сдоеать запросы и тп (отвечает за получение даннх любым способом)
+# задача сериализатора - эти данные правильно сохранить, работать с подготовленными данными
+# максимально валидация в модели
+
+    @action(
+        methods=['POST', 'DELETE'],
+        url_path='(?P<id>[^/.]+)/favorite',
+        detail=False,
+        permission_classes=(IsAuthenticated,),
+    )
+    def favorite(self, request, id):
+        """
+        Метод для обработки POST и DELETE запросов на добавление/удаление
+        рецепта в избранное пользователя по id рецепта.
+        URL = recipes/{id}/favorite/.
+        """
+
+        return services.add_del_smth_to_somewhere(
+            request, id, self.get_serializer, Recipe, FavoriteList
+        )
+
+    @action(
+        methods=['POST', 'DELETE'],
+        url_path='(?P<id>[^/.]+)/shopping_cart',
+        detail=False,
+        permission_classes=(IsAuthenticated,),
+    )
+    def shopping_cart(self, request, id):
+        """
+        Метод для обработки POST и DELETE запросов на добавление/удаление
+        рецепта в список покупок пользователя по id рецепта.
+        URL = recipes/{id}/shopping_cart/.
+        """
+
+        return services.add_del_smth_to_somewhere(
+            request, id, self.get_serializer, Recipe, ShoppingList
+        )
+
+    @action(
+        url_path='download_shopping_cart',
+        detail=False,
+        permission_classes=(IsAuthenticated,),
+    )
+    def download_shopping_cart(self, request):
+        """
+        Метод для загрузки списка покупок.
+        """
+        # прочитать список покупок и сформировать список из продуктов с количествами из всех рецептов списка
+        # annotate sum для количеств
+        #
+        pass

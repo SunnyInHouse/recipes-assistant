@@ -1,15 +1,18 @@
+"""
+Определения классов для дополнительных типов полей.
+"""
+
 import base64
-# import six
 import uuid
 
 from django.core.files.base import ContentFile
+from rest_framework.serializers import ImageField
 
 
-from rest_framework import serializers    
-
-class Base64ImageField(serializers.ImageField):
+class Base64ImageField(ImageField):
     """
-    A Django REST framework field for handling image-uploads through raw post data.
+    A Django REST framework field for handling image-uploads through raw post
+    data.
     It uses base64 for encoding and decoding the contents of the file.
 
     Heavily based on
@@ -33,7 +36,8 @@ class Base64ImageField(serializers.ImageField):
                 self.fail('invalid_image')
 
             # Generate file name:
-            file_name = str(uuid.uuid4())[:12] # 12 characters are more than enough.
+            # 12 characters are more than enough.
+            file_name = str(uuid.uuid4())[:12]
             # Get the file name extension:
             file_extension = self.get_file_extension(file_name, decoded_file)
 
@@ -47,6 +51,5 @@ class Base64ImageField(serializers.ImageField):
         import imghdr
 
         extension = imghdr.what(file_name, decoded_file)
-        extension = "jpg" if extension == "jpeg" else extension
 
-        return extension
+        return "jpg" if extension == "jpeg" else extension

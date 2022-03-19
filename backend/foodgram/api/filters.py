@@ -1,8 +1,8 @@
-
 from django_filters import rest_framework as filters
 from rest_framework.serializers import ValidationError
 
-from .models import Recipe
+from recipes.models import Recipe
+
 from .services import check_value_is_0_or_1
 
 
@@ -28,16 +28,13 @@ class RecipeFilter(filters.FilterSet):
             )
         user = self.request.user
         if user.is_authenticated:
-            if value==1:
-                if name=='is_favorited':
-                    queryset = queryset.filter(favorites__user=user)
-                if name=='is_in_shopping_cart':
-                    queryset = queryset.filter(shoppings__user=user)
+            if value == 1:
+                if name == 'is_favorited':
+                    return queryset.filter(favorites__user=user)
+                if name == 'is_in_shopping_cart':
+                    return queryset.filter(shoppings__user=user)
         return queryset
 
     class Meta:
         model = Recipe
         fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')
-
-
-
