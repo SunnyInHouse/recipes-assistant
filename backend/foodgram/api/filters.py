@@ -1,3 +1,7 @@
+"""
+Описания классов фильтрации.
+"""
+
 from django_filters import rest_framework as filters
 from rest_framework.serializers import ValidationError
 
@@ -12,6 +16,7 @@ class RecipeFilter(filters.FilterSet):
     query_param фильтрам. Доступна фильтрация по избранному, автору, списку
     покупок и тегам.
     """
+
     author = filters.NumberFilter(field_name='author__id', lookup_expr='exact')
     tags = filters.CharFilter(field_name='tags__slug', lookup_expr='in')
     is_favorited = filters.NumberFilter(method='filter_recipes')
@@ -22,10 +27,12 @@ class RecipeFilter(filters.FilterSet):
         Фильтрация рецептов по избранному и списку покупок. Также проверяет
         корректность заданного значения.
         """
+
         if not check_value_is_0_or_1(value):
             raise ValidationError(
                 f"Некорректное значение параметра {name}."
             )
+
         user = self.request.user
         if user.is_authenticated:
             if value == 1:
@@ -33,6 +40,7 @@ class RecipeFilter(filters.FilterSet):
                     return queryset.filter(favorites__user=user)
                 if name == 'is_in_shopping_cart':
                     return queryset.filter(shoppings__user=user)
+
         return queryset
 
     class Meta:

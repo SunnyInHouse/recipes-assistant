@@ -1,8 +1,9 @@
 """
-Определения классов для дополнительных типов полей.
+Описания классов для дополнительных типов полей.
 """
 
 import base64
+import imghdr
 import uuid
 
 from django.core.files.base import ContentFile
@@ -48,7 +49,6 @@ class Base64ImageField(ImageField):
         return super(Base64ImageField, self).to_internal_value(data)
 
     def get_file_extension(self, file_name, decoded_file):
-        import imghdr
 
         extension = imghdr.what(file_name, decoded_file)
 

@@ -36,6 +36,7 @@ class Tag(models.Model):
     """
     Модель для описания тега.
     """
+
     name = models.CharField(
         'Название тега',
         max_length=200,
@@ -197,6 +198,7 @@ class FavoriteList(models.Model):
     """
     Модель для описания избранных рецептов пользователя.
     """
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         verbose_name='Автор списка избранного',
@@ -222,6 +224,7 @@ class ShoppingList(models.Model):
     """
     Модель для описания списка покупок пользователя.
     """
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         verbose_name='Автор списка покупок',
@@ -241,6 +244,3 @@ class ShoppingList(models.Model):
 
     def __str__(self):
         return f'Список покупок пользователя {self.user}'
-
-    # def _get_list_of_ingredients(self):
-    #     pass

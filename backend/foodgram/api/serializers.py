@@ -67,6 +67,7 @@ class UserSerializer(serializers.ModelSerializer):
         Функция получает информацию о подписке на пользователя у автора
         запроса.
         """
+
         user = self.context['request'].user
         if user.is_authenticated:
             return user.subscribers.filter(user_author=obj).exists()
@@ -76,10 +77,12 @@ class UserSerializer(serializers.ModelSerializer):
         """
         Функция для создания пользователя.
         """
+
         password = validated_data.pop('password')
         user = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
+
         return user
 
     def validate_password(self, value):
@@ -87,6 +90,7 @@ class UserSerializer(serializers.ModelSerializer):
         Функция проверяет заданный пользователем пароль на соответстие
         установленным требованиям к паролям.
         """
+
         return services.password_verification(value)
 
 
@@ -99,9 +103,14 @@ class UserChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=128, min_length=8)
 
     def update(self, instance, validated_data):
+        """
+        Функция для обновления пароля пользователя.
+        """
+
         instance.set_password(validated_data['new_password'])
         password_changed(validated_data['new_password'], user=instance)
         instance.save()
+
         return instance
 
     def validate_current_password(self, value):
@@ -109,7 +118,9 @@ class UserChangePasswordSerializer(serializers.Serializer):
         Функция проверяет, что указанный пароль соответствует паролю
         пользователя, отправившему запрос.
         """
+
         user = self.context.get('request').user
+
         if user.check_password(value):
             return value
         raise serializers.ValidationError(
@@ -117,6 +128,10 @@ class UserChangePasswordSerializer(serializers.Serializer):
         )
 
     def validate_new_password(self, value):
+        """
+        Функция проверяет новый пароль на соответствие требованиям к паролям.
+        """
+
         return services.password_verification(value)
 
 
@@ -134,6 +149,7 @@ class GetTokenSerializer(serializers.Serializer):
         пользователю в базе данных и указанный пароль корректен для
         пользователя с указанным e-mail.
         """
+
         try:
             user = User.objects.get(email=data['email'])
         except User.DoesNotExist:
@@ -191,11 +207,13 @@ class ListSubscriptionsSerializer(UserSerializer):
         Функция получает список рецептов пользователя. Отдает ограниченное
         автором запроса число рецептов (recipes_limit), если указано.
         """
+
         request = self.context.get('request')
         recipes = obj.recipes.all()
         limit = request.query_params.get('recipes_limit')
         if limit:
             recipes = recipes[:int(limit)]
+
         return RecipesMiniSerializers(recipes, many=True).data
 
     def get_recipes_count(self, obj):
@@ -203,6 +221,7 @@ class ListSubscriptionsSerializer(UserSerializer):
         Функция считает число рецептов у пользователя, на которого подписан
         автор запроса.
         """
+
         return obj.recipes.count()
 
 
@@ -233,12 +252,14 @@ class SubscribeSerializer(serializers.ModelSerializer):
         """
         Функция проверяет, что пользователь не подписывается на самого себя.
         """
+
         id_user = data['user_subscriber']
         id_author = data['user_author']
         if id_user == id_author:
             raise serializers.ValidationError(
                 'Нельзя подписываться на самого себя.'
             )
+
         return data
 
     def to_representation(self, instance):
@@ -246,7 +267,9 @@ class SubscribeSerializer(serializers.ModelSerializer):
         Функция для получения представления объекта подписки в виде,
         запрошенном в ТЗ. (аналогично представлению в списке подписок)
         """
+
         data = instance.user_author
+
         return ListSubscriptionsSerializer(
             data,
             context={
@@ -344,25 +367,30 @@ class RecipeSerializer(serializers.ModelSerializer):
         """
         Функция проверяет, добавлен ли рецепт в избранное.
         """
+
         return services.check_is_it_in(self, obj, FavoriteList)
 
     def get_is_in_shopping_cart(self, obj):
         """
         Функция проверяет, добавлен ли рецепт в список покупок.
         """
+
         return services.check_is_it_in(self, obj, ShoppingList)
 
     def validate_tags(self, value):
         """
         Функция для валидации тегов.
         """
+
         if len(value) == 0:
             raise serializers.ValidationError('Укажите теги рецепта.')
+
         for tag in value:
             if tag not in Tag.objects.all():
                 raise serializers.ValidationError(
                     'Указанного тега не существует.'
                 )
+
         return value
 
     def validate_ingredients(self, value):
@@ -372,10 +400,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         них указано корректное количество (более 0). Также присутствует
         проверка попытки добавления повторяющихся элементов.
         """
+
         if len(value) == 0:
             raise serializers.ValidationError(
                 'Укажите ингредиенты для рецепта.'
             )
+
         set_ingr_id = set()
         for ingredient in value:
             ingredient_id = ingredient['ingredient']['id']
@@ -395,21 +425,25 @@ class RecipeSerializer(serializers.ModelSerializer):
                     "Количество ингредиента должно быть более 0. Укажите "
                     f"корректное количество ингредиента с id {ingredient_id}."
                 )
+
         return value
 
     def create(self, validated_data):
         """
         Функция для создания рецепта со списком ингредиентов и тегами.
         """
+
         ingredients = validated_data.pop('ingredient_recipe')
         new_recipe = super().create(validated_data)
         services.add_ingredients_to_recipe(new_recipe, ingredients)
+
         return new_recipe
 
     def update(self, instance, validated_data):
         """
         Функция для обновления существующего рецепта.
         """
+
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
         instance.image = validated_data.get('image', instance.image)
@@ -431,8 +465,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         """
         Функция для вывода данных сериализатором.
         """
+
         result = super().to_representation(instance)
         result['tags'] = TagSerielizer(instance.tags.all(), many=True).data
+
         return result
 
 
@@ -455,7 +491,9 @@ class FavoriteSerializer(serializers.ModelSerializer):
         """
         Функция для валидации входящих данных.
         """
+
         recipe = get_object_or_404(Recipe, id=data['recipes'].id)
+
         if self.Meta.model is FavoriteList:
             error_text = 'список избранного'
         if self.Meta.model is ShoppingList:
@@ -468,23 +506,28 @@ class FavoriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                     f"Рецепт {recipe} уже добавлен в ваш {error_text}."
             )
+
         return data
 
     def create(self, validated_data):
         """
         Функция для добавление в список избранного/покупок рецепта.
         """
+
         obj_list, created = self.Meta.model.objects.get_or_create(
             user=validated_data['user'],
         )
         obj_list.recipes.add(validated_data['recipes'])
+
         return obj_list
 
     def to_representation(self, instance):
         """
         Функция для вывода данных сериализатором.
         """
+
         data = instance.recipes.last()
+
         return RecipesMiniSerializers(data).data
 
 

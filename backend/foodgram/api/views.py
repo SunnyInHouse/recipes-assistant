@@ -294,6 +294,7 @@ class RecipeViewset(ModelViewSet):
     def download_shopping_cart(self, request):
         """
         Метод для загрузки списка покупок.
+        URL = recipes/download_shopping_cart/.
         """
         # прочитать список покупок и сформировать список из продуктов с количествами из всех рецептов списка
         # annotate sum для количеств

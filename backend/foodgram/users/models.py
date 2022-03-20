@@ -64,6 +64,7 @@ class Subscribe(models.Model):
     """
     Модель для описания системы подписки.
     """
+
     user_subscriber = models.ForeignKey(
         User,
         verbose_name='Подписчик',
