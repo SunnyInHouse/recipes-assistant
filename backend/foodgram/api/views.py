@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -12,7 +13,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import (GenericViewSet, ModelViewSet,
                                      ReadOnlyModelViewSet)
 
-from recipes.models import FavoriteList, Ingredient, Recipe, ShoppingList, Tag
+from recipes.models import (FavoriteList, Ingredient, IngredientInRecipe,
+                            Recipe, ShoppingList, Tag)
 from users.models import Subscribe, User
 
 from . import services
@@ -68,13 +70,16 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         пользователем.
         URL - /users/set_password/.
         """
+
         user = request.user
         serializer = self.get_serializer(user, data=request.data)
+
         if serializer.is_valid():
             serializer.save()
             return Response(
                 status=status.HTTP_204_NO_CONTENT
             )
+
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
@@ -91,8 +96,10 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         пользователя.
         URL - /users/me/.
         """
+
         user = request.user
         serializer = self.get_serializer(user)
+
         return Response(
             serializer.data,
             status=status.HTTP_200_OK
@@ -109,15 +116,18 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         которых подписан текущий пользователь. В выдачу добавляются рецепты.
         URL - /users/subscriptions/.
         """
+
         user = request.user
         queryset = User.objects.filter(authors__user_subscriber=user)
 
         page = self.paginate_queryset(queryset)
+
         if page:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
+
         return Response(
             serializer.data,
             status=status.HTTP_200_OK
@@ -296,7 +306,20 @@ class RecipeViewset(ModelViewSet):
         Метод для загрузки списка покупок.
         URL = recipes/download_shopping_cart/.
         """
-        # прочитать список покупок и сформировать список из продуктов с количествами из всех рецептов списка
-        # annotate sum для количеств
-        #
-        pass
+
+        user = request.user
+        ingredient_list_user = (
+            IngredientInRecipe.objects.prefetch_related('ingredient', 'recipe')
+            .filter(recipe__shoppings__user=user).
+            values_list('ingredient__name', 'ingredient__measurement_unit')
+        )
+
+        shopping_list = ingredient_list_user.annotate(amount=Sum('quantity'))
+
+        #  преобразование в pdf файл словаря со списком
+        # вид:  мясо (г) - 180
+
+
+        return Response(
+            shopping_list,
+            status=status.HTTP_200_OK)
