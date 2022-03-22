@@ -27,6 +27,7 @@ from users.models import Subscribe, User
 from . import services
 from .filters import RecipeFilter
 from .pagination import CustomPageNumberPagination
+from .permissions import IsOwnerOrReadOnly
 from .serializers import (FavoriteSerializer, GetTokenSerializer,
                           IngredientSerielizer, ListSubscriptionsSerializer,
                           RecipeSerializer, ShoppingListSerializer,
@@ -198,6 +199,7 @@ class DelTokenView(APIView):
 
     name = 'Удаление токена'
     description = 'Удаление токена'
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         """
@@ -232,6 +234,9 @@ class IngredientViewset(ReadOnlyModelViewSet):
     URL = /tags/.
     """
 
+    name = 'Обработка запросов об ингридиентах'
+    description = 'Обработка запросов об ингридиентах'
+
     permission_classes = (AllowAny,)
     serializer_class = IngredientSerielizer
     queryset = Ingredient.objects.all()
@@ -250,13 +255,18 @@ class RecipeViewset(ModelViewSet):
     name = 'Обработка запросов о рецептах'
     description = 'Обработка запросов о рецептах'
 
-    permission_classes = (AllowAny,)
     queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
 
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            permission_classes = (AllowAny,)
+        elif self.action in ('update', 'destroy', 'partial_update'):
+            permission_classes = (IsOwnerOrReadOnly,)
+        else:
+            permission_classes = (IsAuthenticated,)
+        return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         if self.action == 'favorite':
@@ -265,11 +275,13 @@ class RecipeViewset(ModelViewSet):
             return ShoppingListSerializer
         return RecipeSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
     @action(
         methods=['POST', 'DELETE'],
         url_path='(?P<id>[^/.]+)/favorite',
         detail=False,
-        permission_classes=(IsAuthenticated,),
     )
     def favorite(self, request, id):
         """
@@ -286,7 +298,6 @@ class RecipeViewset(ModelViewSet):
         methods=['POST', 'DELETE'],
         url_path='(?P<id>[^/.]+)/shopping_cart',
         detail=False,
-        permission_classes=(IsAuthenticated,),
     )
     def shopping_cart(self, request, id):
         """
@@ -300,9 +311,9 @@ class RecipeViewset(ModelViewSet):
         )
 
     @action(
+        methods=['GET', ],
         url_path='download_shopping_cart',
         detail=False,
-        permission_classes=(IsAuthenticated,),
     )
     def download_shopping_cart(self, request):
         """
