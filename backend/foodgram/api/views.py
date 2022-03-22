@@ -1,5 +1,12 @@
+import io
+
 from django.db.models import Sum
+from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
+from reportlab.lib.colors import navy, olive
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -257,10 +264,6 @@ class RecipeViewset(ModelViewSet):
         if self.action == 'shopping_cart':
             return ShoppingListSerializer
         return RecipeSerializer
-#  написать пермишн -
-#  задача view - данные собрать, сдоеать запросы и тп (отвечает за получение даннх любым способом)
-# задача сериализатора - эти данные правильно сохранить, работать с подготовленными данными
-# максимально валидация в модели
 
     @action(
         methods=['POST', 'DELETE'],
@@ -303,23 +306,48 @@ class RecipeViewset(ModelViewSet):
     )
     def download_shopping_cart(self, request):
         """
-        Метод для загрузки списка покупок.
+        Метод для загрузки списка покупок в формате PDF при помощи ReportLab.
         URL = recipes/download_shopping_cart/.
         """
 
         user = request.user
         ingredient_list_user = (
-            IngredientInRecipe.objects.prefetch_related('ingredient', 'recipe')
-            .filter(recipe__shoppings__user=user).
+            IngredientInRecipe.objects.
+            prefetch_related('ingredient', 'recipe').
+            filter(recipe__shoppings__user=user).
             values_list('ingredient__name', 'ingredient__measurement_unit')
         )
 
         shopping_list = ingredient_list_user.annotate(amount=Sum('quantity'))
 
-        #  преобразование в pdf файл словаря со списком
-        # вид:  мясо (г) - 180
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer)
+        pdfmetrics.registerFont(TTFont('Arial', 'Arial Unicode.ttf'))
 
+        p.setFont('Arial', 20)
+        y = 810
+        p.setFillColor(olive)
+        p.drawString(55, y, 'Список покупок')
+        y -= 30
 
-        return Response(
-            shopping_list,
-            status=status.HTTP_200_OK)
+        p.setFont('Arial', 14)
+        p.setFillColor(navy)
+        string_number = 1
+        for i in shopping_list:
+            p.drawString(
+                15, y,
+                f'{string_number}. {i[0].capitalize()} ({i[1]}) - {i[2]}'
+            )
+            y -= 20
+            string_number += 1
+
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+
+        return FileResponse(
+            buffer,
+            as_attachment=True,
+            filename='shopping_list.pdf',
+            status=status.HTTP_200_OK
+        )
