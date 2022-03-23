@@ -158,7 +158,7 @@ def create_pdf(data: list, title: str) -> TextIO:
 
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
-    pdfmetrics.registerFont(TTFont('Arial', 'Arial Unicode.ttf'))
+    pdfmetrics.registerFont(TTFont('Arial', './static/Arial Unicode.ttf'))
 
     p.setFont('Arial', 20)
     y = 810
