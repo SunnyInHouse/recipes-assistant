@@ -325,7 +325,7 @@ class RecipeViewset(ModelViewSet):
 
         shopping_list = ingredient_list_user.annotate(amount=Sum('quantity'))
 
-        file = services.print_pdf(shopping_list, 'Список покупок')
+        file = services.create_pdf(shopping_list, 'Список покупок')
 
         return FileResponse(
             file,

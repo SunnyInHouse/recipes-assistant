@@ -151,7 +151,7 @@ def add_del_smth_to_somewhere(
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-def print_pdf(data: list, title: str) -> TextIO:
+def create_pdf(data: list, title: str) -> TextIO:
     """
     Создает pdf-файл при помощи ReportLab.
     """
