@@ -43,15 +43,6 @@ class TagAdmin(admin.ModelAdmin):
     }
 
 
-# class TagRecipeAdmin(admin.ModelAdmin):
-#     list_display = ('tag', 'recipe',)
-
-
-# class TagRecipeInline(admin.TabularInline):
-#     model = TagRecipe
-#     autocomplete_fields = ('tag',)
-
-
 class RecipeAdmin(admin.ModelAdmin):
     list_display = (
         'name',
@@ -63,7 +54,6 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     inlines = [
         IngredientInRecipeInline,
-        # TagRecipeInline,
     ]
     autocomplete_fields = ('author', 'tags',)
 
@@ -102,4 +92,3 @@ admin.site.register(IngredientInRecipe, IngredientInRecipeAdmin)
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(ShoppingList, ShoppingListAdmin)
-# admin.site.register(TagRecipe)

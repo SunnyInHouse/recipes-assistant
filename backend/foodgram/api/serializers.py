@@ -368,14 +368,14 @@ class RecipeSerializer(serializers.ModelSerializer):
         Функция проверяет, добавлен ли рецепт в избранное.
         """
 
-        return services.check_is_it_in(self, obj, FavoriteList)
+        return services.check_is_it_in(self.context['request'].user, obj, FavoriteList)
 
     def get_is_in_shopping_cart(self, obj):
         """
         Функция проверяет, добавлен ли рецепт в список покупок.
         """
 
-        return services.check_is_it_in(self, obj, ShoppingList)
+        return services.check_is_it_in(self.context['request'].user, obj, ShoppingList)
 
     def validate_tags(self, value):
         """
