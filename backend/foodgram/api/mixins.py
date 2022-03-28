@@ -39,8 +39,8 @@ class CustomCreateDeleteMixin(DestroyModelMixin, CreateModelMixin, GenericViewSe
         
         if self.list_object == 'favorite_recipes':
             queryset = user.favorite_recipes
-        # if self.list_object == 'shopping_recipes':
-        #     queryset = user.self.list_object
+        if self.list_object == 'shopping_recipes':
+            queryset = user.shopping_recipes
 
         if queryset.filter(id=id).exists():
             queryset.remove(obj)

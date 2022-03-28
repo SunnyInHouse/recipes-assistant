@@ -12,7 +12,13 @@ router1.register('recipes', views.RecipeViewset, basename='recipe')
 router1.register(
         'recipes/(?P<id>[^/.]+)/favorite',
         views.FavouriteView,
-        basename = 'favorite')
+        basename = 'favorite'
+)
+router1.register(
+    'recipes/(?P<id>[^/.]+)/shopping_cart',
+    views.ShoppingListView,
+    basename = 'shoppinglist'
+)
 
 urlpatterns = [
     path('', include(router1.urls)),

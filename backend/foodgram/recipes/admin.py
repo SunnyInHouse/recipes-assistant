@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (Ingredient, IngredientInRecipe, Recipe,
-                     ShoppingList, Tag) #FavoriteList, 
+                     Tag) #FavoriteList, ShoppingList, 
 
 
 class IngredientAdmin(admin.ModelAdmin):
@@ -58,24 +58,24 @@ class RecipeAdmin(admin.ModelAdmin):
     autocomplete_fields = ('author', 'tags',)
 
 
-class RecipeShoppingListInline(admin.StackedInline):
-    model = ShoppingList.recipes.through
-    extra = 1
-    show_change_link = True
-    verbose_name = 'Рецепт'
-    verbose_name_plural = 'Рецепты в списке'
+# class RecipeShoppingListInline(admin.StackedInline):
+#     model = ShoppingList.recipes.through
+#     extra = 1
+#     show_change_link = True
+#     verbose_name = 'Рецепт'
+#     verbose_name_plural = 'Рецепты в списке'
 
 
 # class RecipesFavouriteList(RecipeShoppingListInline):
 #     model = FavoriteList.recipes.through
 
 
-class ShoppingListAdmin(admin.ModelAdmin):
-    autocomplete_fields = ('user', )
-    exclude = ('recipes',)
-    inlines = [
-        RecipeShoppingListInline,
-    ]
+# class ShoppingListAdmin(admin.ModelAdmin):
+#     autocomplete_fields = ('user', )
+#     exclude = ('recipes',)
+#     inlines = [
+#         RecipeShoppingListInline,
+#     ]
 
 
 # class FavoriteListAdmin(admin.ModelAdmin):
@@ -91,4 +91,4 @@ admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(IngredientInRecipe, IngredientInRecipeAdmin)
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
-admin.site.register(ShoppingList, ShoppingListAdmin)
+# admin.site.register(ShoppingList, ShoppingListAdmin)

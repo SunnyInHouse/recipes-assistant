@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
 from recipes.models import (Ingredient, IngredientInRecipe,
-                            Recipe, ShoppingList, Tag) #FavoriteList, 
+                            Recipe,  Tag) #FavoriteList, ShoppingList,
 from users.models import Subscribe, User
 
 from . import services
@@ -378,7 +378,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         Функция проверяет, добавлен ли рецепт в список покупок.
         """
 
-        return services.check_is_it_in(self.context['request'].user, obj, ShoppingList)
+        if self.context.get('request').user.is_authenticated:
+            return obj.is_in_shopping_cart
+        return False
 
     def validate_tags(self, value):
         """
@@ -532,13 +534,13 @@ class ShoppingListSerializer(serializers.ModelSerializer):
     покупок.
     """
 
-    recipes = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+    shopping_recipes = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
-        model = ShoppingList
+        model = User
         fields = (
-            'recipes',
+            'shopping_recipes',
             'user',
         )
 
@@ -547,19 +549,19 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         Функция для валидации входящих данных.
         """
 
-        recipe = get_object_or_404(Recipe, id=data['recipes'].id)
+        recipe = get_object_or_404(Recipe, id=data['shopping_recipes'].id)
 
         # if self.Meta.model is FavoriteList:
         #     error_text = 'список избранного'
-        if self.Meta.model is ShoppingList:
-            error_text = 'список покупок'
+        # if self.Meta.model is ShoppingList:
+        #     error_text = 'список покупок'
 
-        if self.Meta.model.objects.select_related('recipes').filter(
-            user=data['user'],
-            recipes=recipe
+        if self.Meta.model.objects.select_related('shopping_recipes').filter(
+            username=data['user'].username,
+            shopping_recipes=recipe
         ).exists():
             raise serializers.ValidationError(
-                    f"Рецепт {recipe} уже добавлен в ваш {error_text}."
+                    f"Рецепт {recipe} уже добавлен в ваш список покупок."
             )
 
         return data
@@ -569,18 +571,15 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         Функция для добавление в список избранного/покупок рецепта.
         """
 
-        obj_list, created = self.Meta.model.objects.get_or_create(
-            user=validated_data['user'],
-        )
-        obj_list.recipes.add(validated_data['recipes'])
+        user = validated_data['user']
+        recipe = validated_data['shopping_recipes']
+        user.shopping_recipes.add(recipe)
 
-        return obj_list
+        return recipe
 
     def to_representation(self, instance):
         """
         Функция для вывода данных сериализатором.
         """
 
-        data = instance.recipes.last()
-
-        return RecipesMiniSerializers(data).data
+        return RecipesMiniSerializers(instance).data
