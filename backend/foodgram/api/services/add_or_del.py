@@ -14,8 +14,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
-from recipes.models import (FavoriteList,
-                            ShoppingList)
+from recipes.models import (
+                            ShoppingList) #FavoriteList,
 from users.models import Subscribe
 
 

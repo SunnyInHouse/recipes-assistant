@@ -194,53 +194,53 @@ class IngredientInRecipe(models.Model):
                 f'{self.ingredient}')
 
 
-class FavoriteList(models.Model):
-    """
-    Модель для описания избранных рецептов пользователя.
-    """
+# class FavoriteList(models.Model):
+#     """
+#     Модель для описания избранных рецептов пользователя.
+#     """
 
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        verbose_name='Автор списка избранного',
-        on_delete=models.CASCADE,
-        related_name='favorites',
-    )
-    recipes = models.ManyToManyField(
-        Recipe,
-        verbose_name='Рецепты',
-        related_name='favorites',
-    )
+#     user = models.OneToOneField(
+#         settings.AUTH_USER_MODEL,
+#         verbose_name='Автор списка избранного',
+#         on_delete=models.CASCADE,
+#         related_name='favorites',
+#     )
+#     recipes = models.ManyToManyField(
+#         Recipe,
+#         verbose_name='Рецепты',
+#         related_name='favorites',
+#     )
 
-    class Meta():
-        verbose_name = 'Список избранных рецептов'
-        verbose_name_plural = 'Списки избранных рецептов'
-        ordering = ('recipes__name',)
+#     class Meta():
+#         verbose_name = 'Список избранных рецептов'
+#         verbose_name_plural = 'Списки избранных рецептов'
+#         ordering = ('recipes__name',)
 
-    def __str__(self):
-        return f'Список избранных рецептов {self.user}'
+#     def __str__(self):
+#         return f'Список избранных рецептов {self.user}'
 
 
-class ShoppingList(models.Model):
-    """
-    Модель для описания списка покупок пользователя.
-    """
+# class ShoppingList(models.Model):
+#     """
+#     Модель для описания списка покупок пользователя.
+#     """
 
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        verbose_name='Автор списка покупок',
-        on_delete=models.CASCADE,
-        related_name='shoppings',
-    )
-    recipes = models.ManyToManyField(
-        Recipe,
-        verbose_name='Рецепты',
-        related_name='shoppings',
-    )
+#     user = models.OneToOneField(
+#         settings.AUTH_USER_MODEL,
+#         verbose_name='Автор списка покупок',
+#         on_delete=models.CASCADE,
+#         related_name='shoppings',
+#     )
+#     recipes = models.ManyToManyField(
+#         Recipe,
+#         verbose_name='Рецепты',
+#         related_name='shoppings',
+#     )
 
-    class Meta():
-        verbose_name = 'Список покупок'
-        verbose_name_plural = 'Списки покупок'
-        ordering = ('recipes__name',)
+#     class Meta():
+#         verbose_name = 'Список покупок'
+#         verbose_name_plural = 'Списки покупок'
+#         ordering = ('recipes__name',)
 
-    def __str__(self):
-        return f'Список покупок пользователя {self.user}'
+#     def __str__(self):
+#         return f'Список покупок пользователя {self.user}'

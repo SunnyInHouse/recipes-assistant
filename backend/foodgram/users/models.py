@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from recipes.models import Recipe
+
 
 class User(AbstractUser):
     """
@@ -34,6 +36,16 @@ class User(AbstractUser):
     password = models.CharField(
         'Пароль',
         max_length=150,
+    )
+    favorite_recipes = models.ManyToManyField(
+        Recipe,
+        verbose_name='Избранные рецепты',
+        related_name='favorites',
+    )
+    shopping_recipes = models.ManyToManyField(
+        Recipe,
+        verbose_name='Рецепты в списке покупок',
+        related_name='shoppings',
     )
 
     USERNAME_FIELD = 'email'

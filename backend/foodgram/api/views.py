@@ -1,5 +1,6 @@
-from django.db.models import Sum
+from django.db.models import Exists, Sum, OuterRef
 from django.http import FileResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -14,19 +15,19 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import (GenericViewSet, ModelViewSet,
                                      ReadOnlyModelViewSet)
 
-from recipes.models import (FavoriteList, Ingredient, IngredientInRecipe,
-                            Recipe, ShoppingList, Tag)
+from recipes.models import (Ingredient, IngredientInRecipe,
+                            Recipe, ShoppingList, Tag) #FavoriteList,
 from users.models import Subscribe, User
 
 from . import services
 from .filters import RecipeFilter
 from .pagination import CustomPageNumberPagination
 from .permissions import IsOwnerOrReadOnly
-from .serializers import (FavoriteSerializer, GetTokenSerializer,
+from .serializers import ( FavoriteSerializer, GetTokenSerializer,
                           IngredientSerielizer, ListSubscriptionsSerializer,
                           RecipeSerializer, ShoppingListSerializer,
                           SubscribeSerializer, TagSerielizer,
-                          UserChangePasswordSerializer, UserSerializer)
+                          UserChangePasswordSerializer, UserSerializer) #FavoriteSerializer,
 
 
 class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
@@ -268,25 +269,59 @@ class RecipeViewset(ModelViewSet):
         if self.action == 'shopping_cart':
             return ShoppingListSerializer
         return RecipeSerializer
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            favorite = user.favorite_recipes.filter(id=OuterRef('id'))
+            return Recipe.objects.annotate(is_favorited = Exists(favorite))
+        return Recipe.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(
-        methods=['POST', 'DELETE'],
-        url_path='(?P<id>[^/.]+)/favorite',
-        detail=False,
-    )
-    def favorite(self, request, id):
-        """
-        Метод для обработки POST и DELETE запросов на добавление/удаление
-        рецепта в избранное пользователя по id рецепта.
-        URL = recipes/{id}/favorite/.
-        """
+    # @action(
+    #     methods=['POST', 'DELETE'],
+    #     url_path='(?P<id>[^/.]+)/favorite',
+    #     detail=False,
+    # )
+    # def favorite(self, request, id):
+    #     """
+    #     Метод для обработки POST и DELETE запросов на добавление/удаление
+    #     рецепта в избранное пользователя по id рецепта.
+    #     URL = recipes/{id}/favorite/.
+    #     """
 
-        return services.add_del_smth_to_somewhere(
-            request, id, self.get_serializer, Recipe, FavoriteList
-        )
+    #     recipe = get_object_or_404(Recipe, id=id)
+
+    #     if request.method == 'POST':
+
+    #         serializer = FavoriteSerializer(
+    #             data={
+    #                 'favorite_recipes': id,
+    #                 'user': request.user.id,
+    #             }
+    #         )
+
+    #         if serializer.is_valid():
+    #             serializer.save()
+    #             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+    #         return Response(
+    #             serializer.errors,
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
+
+    #     if request.user.favorite_recipes.filter(id=id).exists():
+    #         request.user.favorite_recipes.remove(recipe)
+    #         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    #     return Response(
+    #         {'errors': 'Указанный рецепт не добавлен в избранное.', },
+    #         status=status.HTTP_400_BAD_REQUEST
+    #     )
+
+
 
     @action(
         methods=['POST', 'DELETE'],
@@ -333,3 +368,13 @@ class RecipeViewset(ModelViewSet):
             filename='shopping_list.pdf',
             status=status.HTTP_200_OK
         )
+
+
+
+from .mixins import CustomCreateDeleteMixin
+class FavouriteView(CustomCreateDeleteMixin):
+
+    serializer_class = FavoriteSerializer
+    model_class = Recipe
+    error = 'Указанный рецепт не был добавлен в список избранного.'
+    list_object = 'favorite_recipes'

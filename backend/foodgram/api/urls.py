@@ -9,6 +9,10 @@ router1.register('users', views.UserViewSet, basename='users')
 router1.register('tags', views.TagViewset, basename='tag')
 router1.register('ingredients', views.IngredientViewset, basename='ingredient')
 router1.register('recipes', views.RecipeViewset, basename='recipe')
+router1.register(
+        'recipes/(?P<id>[^/.]+)/favorite',
+        views.FavouriteView,
+        basename = 'favorite')
 
 urlpatterns = [
     path('', include(router1.urls)),
@@ -22,4 +26,8 @@ urlpatterns = [
         views.DelTokenView.as_view(),
         name='token_logout'
     ),
+    # path(
+    #     'recipes/<int:id>/favorite/',
+    #     views.FavouriteView.as_view(),
+    #     name = 'favorite')
 ]

@@ -3,8 +3,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
-from recipes.models import (FavoriteList, Ingredient, IngredientInRecipe,
-                            Recipe, ShoppingList, Tag)
+from recipes.models import (Ingredient, IngredientInRecipe,
+                            Recipe, ShoppingList, Tag) #FavoriteList, 
 from users.models import Subscribe, User
 
 from . import services
@@ -368,7 +368,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         Функция проверяет, добавлен ли рецепт в избранное.
         """
 
-        return services.check_is_it_in(self.context['request'].user, obj, FavoriteList)
+        if self.context.get('request').user.is_authenticated:
+            return obj.is_favorited
+        return False
+
 
     def get_is_in_shopping_cart(self, obj):
         """
@@ -477,11 +480,63 @@ class FavoriteSerializer(serializers.ModelSerializer):
     Сериалиализатор для обработки запросов на добавление рецептов в избранное.
     """
 
+    favorite_recipes = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = User
+        fields = (
+            'favorite_recipes',
+            'user',
+        )
+
+    def validate(self, data):
+        """
+        Функция для валидации входящих данных.
+        """
+
+        recipe = get_object_or_404(Recipe, id=data['favorite_recipes'].id)
+
+        if self.Meta.model.objects.select_related('favorite_recipes').filter(
+            username=data['user'].username,
+            favorite_recipes=recipe
+        ).exists():
+            raise serializers.ValidationError(
+                    f"Рецепт {recipe} уже добавлен в ваш список избранного."
+            )
+
+        return data
+
+    def create(self, validated_data):
+        """
+        Функция для добавление в список избранного/покупок рецепта.
+        """
+
+        user = validated_data['user']
+        recipe = validated_data['favorite_recipes']
+        user.favorite_recipes.add(recipe)
+
+        return recipe
+
+    def to_representation(self, instance):
+        """
+        Функция для вывода данных сериализатором.
+        """
+
+        return RecipesMiniSerializers(instance).data
+
+
+class ShoppingListSerializer(serializers.ModelSerializer):
+    """
+    Сериалиализатор для обработки запросов на добавление рецептов в список
+    покупок.
+    """
+
     recipes = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
-        model = FavoriteList
+        model = ShoppingList
         fields = (
             'recipes',
             'user',
@@ -494,8 +549,8 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
         recipe = get_object_or_404(Recipe, id=data['recipes'].id)
 
-        if self.Meta.model is FavoriteList:
-            error_text = 'список избранного'
+        # if self.Meta.model is FavoriteList:
+        #     error_text = 'список избранного'
         if self.Meta.model is ShoppingList:
             error_text = 'список покупок'
 
@@ -529,13 +584,3 @@ class FavoriteSerializer(serializers.ModelSerializer):
         data = instance.recipes.last()
 
         return RecipesMiniSerializers(data).data
-
-
-class ShoppingListSerializer(FavoriteSerializer):
-    """
-    Сериалиализатор для обработки запросов на добавление рецептов в список
-    покупок.
-    """
-
-    class Meta(FavoriteSerializer.Meta):
-        model = ShoppingList

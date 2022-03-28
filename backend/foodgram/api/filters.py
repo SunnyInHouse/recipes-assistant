@@ -37,7 +37,7 @@ class RecipeFilter(filters.FilterSet):
         if user.is_authenticated:
             if value == 1:
                 if name == 'is_favorited':
-                    return queryset.filter(favorites__user=user)
+                    return queryset.filter(favorites=user)
                 if name == 'is_in_shopping_cart':
                     return queryset.filter(shoppings__user=user)
 
