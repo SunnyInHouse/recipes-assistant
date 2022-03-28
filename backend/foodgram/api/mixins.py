@@ -7,19 +7,21 @@ from rest_framework.response import Response
 from rest_framework.mixins import DestroyModelMixin, CreateModelMixin
 from rest_framework.viewsets import GenericViewSet
 
-class CustomCreateDeleteMixin(DestroyModelMixin, CreateModelMixin, GenericViewSet):
+class CustomCreateDeleteMixin(DestroyModelMixin, CreateModelMixin,
+                              GenericViewSet):
 
     serializer_class = None
     model_class = None
     error = 'Указанный объект не был добавлен в список'
-    list_object = 'favorite_recipes'
+    list_object = 'favorite'
 
     def create(self, request, id):
         
         serializer = self.serializer_class(
                 data={
-                    self.list_object: id,
+                    'recipe': id,
                     'user': request.user.id,
+                    'type_list': self.list_object,
                 }
             )
 
@@ -37,9 +39,9 @@ class CustomCreateDeleteMixin(DestroyModelMixin, CreateModelMixin, GenericViewSe
         user = request.user
         obj = get_object_or_404(self.model_class, id=id)
         
-        if self.list_object == 'favorite_recipes':
+        if self.list_object == 'favorite':
             queryset = user.favorite_recipes
-        if self.list_object == 'shopping_recipes':
+        if self.list_object == 'shopping':
             queryset = user.shopping_recipes
 
         if queryset.filter(id=id).exists():

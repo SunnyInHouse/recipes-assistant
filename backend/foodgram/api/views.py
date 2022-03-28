@@ -23,9 +23,9 @@ from . import services
 from .filters import RecipeFilter
 from .pagination import CustomPageNumberPagination
 from .permissions import IsOwnerOrReadOnly
-from .serializers import ( FavoriteSerializer, GetTokenSerializer,
+from .serializers import ( FavoriteShoppingSerializer, GetTokenSerializer,
                           IngredientSerielizer, ListSubscriptionsSerializer,
-                          RecipeSerializer, ShoppingListSerializer,
+                          RecipeSerializer, #ShoppingListSerializer,
                           SubscribeSerializer, TagSerielizer,
                           UserChangePasswordSerializer, UserSerializer) 
 
@@ -250,7 +250,7 @@ class RecipeViewset(ModelViewSet):
     name = 'Обработка запросов о рецептах'
     description = 'Обработка запросов о рецептах'
 
-    # queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
 
@@ -262,13 +262,6 @@ class RecipeViewset(ModelViewSet):
         else:
             permission_classes = (IsAuthenticated,)
         return [permission() for permission in permission_classes]
-
-    def get_serializer_class(self):
-        # if self.action == 'favorite':
-        #     return FavoriteSerializer
-        # if self.action == 'shopping_cart':
-        #     return ShoppingListSerializer
-        return RecipeSerializer
     
     def get_queryset(self):
         user = self.request.user
@@ -283,65 +276,6 @@ class RecipeViewset(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-    # @action(
-    #     methods=['POST', 'DELETE'],
-    #     url_path='(?P<id>[^/.]+)/favorite',
-    #     detail=False,
-    # )
-    # def favorite(self, request, id):
-    #     """
-    #     Метод для обработки POST и DELETE запросов на добавление/удаление
-    #     рецепта в избранное пользователя по id рецепта.
-    #     URL = recipes/{id}/favorite/.
-    #     """
-
-    #     recipe = get_object_or_404(Recipe, id=id)
-
-    #     if request.method == 'POST':
-
-    #         serializer = FavoriteSerializer(
-    #             data={
-    #                 'favorite_recipes': id,
-    #                 'user': request.user.id,
-    #             }
-    #         )
-
-    #         if serializer.is_valid():
-    #             serializer.save()
-    #             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-    #         return Response(
-    #             serializer.errors,
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-
-    #     if request.user.favorite_recipes.filter(id=id).exists():
-    #         request.user.favorite_recipes.remove(recipe)
-    #         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    #     return Response(
-    #         {'errors': 'Указанный рецепт не добавлен в избранное.', },
-    #         status=status.HTTP_400_BAD_REQUEST
-    #     )
-
-
-
-    # @action(
-    #     methods=['POST', 'DELETE'],
-    #     url_path='(?P<id>[^/.]+)/shopping_cart',
-    #     detail=False,
-    # )
-    # def shopping_cart(self, request, id):
-    #     """
-    #     Метод для обработки POST и DELETE запросов на добавление/удаление
-    #     рецепта в список покупок пользователя по id рецепта.
-    #     URL = recipes/{id}/shopping_cart/.
-    #     """
-
-    #     return services.add_del_smth_to_somewhere(
-    #         request, id, self.get_serializer, Recipe, ShoppingList
-    #     )
 
     @action(
         methods=['GET', ],
@@ -377,16 +311,34 @@ class RecipeViewset(ModelViewSet):
 
 from .mixins import CustomCreateDeleteMixin
 class FavouriteView(CustomCreateDeleteMixin):
+    """
+    Вьюсет для работы с запросами об избранном - добавление в избранное и
+    удаление рецепта из избранного по id.
+    URL - /recipes/<int:id>/favorite/.
+    """
 
-    serializer_class = FavoriteSerializer
+    name = 'Обработка запросов на добавление/удаление в избранное'
+    description = 'Обработка запросов на добавление/удаление в избранное'
+
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FavoriteShoppingSerializer
     model_class = Recipe
     error = 'Указанный рецепт не был добавлен в список избранного.'
-    list_object = 'favorite_recipes'
+    list_object = 'favorite'
 
 
 class ShoppingListView(CustomCreateDeleteMixin):
+    """
+    Вьюсет для работы с запросами о списке покупок - добавление в список и
+    удаление рецепта из списка по id.
+    URL - /recipes/<int:id>/shopping_cart/.
+    """
 
-    serializer_class = ShoppingListSerializer
+    name = 'Обработка запросов на добавление/удаление в список покупок'
+    description = 'Обработка запросов на добавление/удаление в список покупок'
+
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FavoriteShoppingSerializer
     model_class = Recipe
-    error = 'Указанный рецепт не был добавлен в список список покупок.'
-    list_object = 'shopping_recipes'
+    error = 'Указанный рецепт не был добавлен в список покупок.'
+    list_object = 'shopping'

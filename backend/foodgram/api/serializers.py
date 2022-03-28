@@ -477,19 +477,23 @@ class RecipeSerializer(serializers.ModelSerializer):
         return result
 
 
-class FavoriteSerializer(serializers.ModelSerializer):
+class FavoriteShoppingSerializer(serializers.ModelSerializer):
     """
-    Сериалиализатор для обработки запросов на добавление рецептов в избранное.
+    Сериалиализатор для обработки запросов на добавление рецептов в избранное
+    или в список покупок в зависимости от значения переданного в него параметра
+    type_list.
     """
 
-    favorite_recipes = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    type_list = serializers.CharField()
 
     class Meta:
         model = User
         fields = (
-            'favorite_recipes',
+            'recipe',
             'user',
+            'type_list',
         )
 
     def validate(self, data):
@@ -497,14 +501,24 @@ class FavoriteSerializer(serializers.ModelSerializer):
         Функция для валидации входящих данных.
         """
 
-        recipe = get_object_or_404(Recipe, id=data['favorite_recipes'].id)
+        recipe = get_object_or_404(Recipe, id=data['recipe'].id)
 
-        if self.Meta.model.objects.select_related('favorite_recipes').filter(
-            username=data['user'].username,
-            favorite_recipes=recipe
-        ).exists():
+        if data['type_list'] == 'favorite':
+            error_text = 'список избранного'
+            condition = User.objects.select_related('favorite_recipes').filter(
+                username=data['user'].username,
+                favorite_recipes=recipe
+            ).exists()
+        if data['type_list'] == 'shopping':
+            error_text = 'список покупок'
+            condition = User.objects.select_related('shopping_recipes').filter(
+                username=data['user'].username,
+                shopping_recipes=recipe
+            ).exists()
+
+        if condition:
             raise serializers.ValidationError(
-                    f"Рецепт {recipe} уже добавлен в ваш список избранного."
+                    f"Рецепт {recipe} уже добавлен в ваш {error_text}."
             )
 
         return data
@@ -515,65 +529,12 @@ class FavoriteSerializer(serializers.ModelSerializer):
         """
 
         user = validated_data['user']
-        recipe = validated_data['favorite_recipes']
-        user.favorite_recipes.add(recipe)
+        recipe = validated_data['recipe']
 
-        return recipe
-
-    def to_representation(self, instance):
-        """
-        Функция для вывода данных сериализатором.
-        """
-
-        return RecipesMiniSerializers(instance).data
-
-
-class ShoppingListSerializer(serializers.ModelSerializer):
-    """
-    Сериалиализатор для обработки запросов на добавление рецептов в список
-    покупок.
-    """
-
-    shopping_recipes = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-
-    class Meta:
-        model = User
-        fields = (
-            'shopping_recipes',
-            'user',
-        )
-
-    def validate(self, data):
-        """
-        Функция для валидации входящих данных.
-        """
-
-        recipe = get_object_or_404(Recipe, id=data['shopping_recipes'].id)
-
-        # if self.Meta.model is FavoriteList:
-        #     error_text = 'список избранного'
-        # if self.Meta.model is ShoppingList:
-        #     error_text = 'список покупок'
-
-        if self.Meta.model.objects.select_related('shopping_recipes').filter(
-            username=data['user'].username,
-            shopping_recipes=recipe
-        ).exists():
-            raise serializers.ValidationError(
-                    f"Рецепт {recipe} уже добавлен в ваш список покупок."
-            )
-
-        return data
-
-    def create(self, validated_data):
-        """
-        Функция для добавление в список избранного/покупок рецепта.
-        """
-
-        user = validated_data['user']
-        recipe = validated_data['shopping_recipes']
-        user.shopping_recipes.add(recipe)
+        if validated_data['type_list']=='favorite':
+            user.favorite_recipes.add(recipe)
+        if validated_data['type_list']=='shopping':
+            user.shopping_recipes.add(recipe)
 
         return recipe
 
