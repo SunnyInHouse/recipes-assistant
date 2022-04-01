@@ -1,17 +1,33 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserCreationForm
 from rest_framework.authtoken.admin import TokenAdmin
 
-from .models import User, Subscribe
-from recipes.models import Recipe
+from .models import Subscribe, User
 
 
-# class RecipeInline(admin.TabularInline):
-#     model = Recipe
-#     fields = ('name', 'text',)
-#### дописать отобрадения полей со списками рецептов в избранном и в шоппинг листе
+class CustomUserCreationForm(UserCreationForm):
+
+    class Meta:
+        model = UserCreationForm.Meta.model
+        fields = '__all__'
+        field_classes = UserCreationForm.Meta.field_classes
+
 
 class CustomUserAdmin(UserAdmin):
+    add_form = CustomUserCreationForm
+    add_fieldsets = (
+        (None, {'fields': ('username', 'password1', 'password2')}),
+        (('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
+        (('Permissions'), {
+            'fields': (
+                'is_active', 'is_staff', 'is_superuser', 'groups',
+                'user_permissions'
+            ),
+        }),
+        (('Important dates'), {'fields': ('last_login', 'date_joined')}),
+    )
+
     list_filter = (
         'email',
         'username',
@@ -22,12 +38,7 @@ class CustomUserAdmin(UserAdmin):
         'last_name',
         'email',
         'password',
-        # 'favorite_recipes',
-        # 'shopping_recipes',
     )
-    # inline = [
-    #     RecipeInline,
-    # ]
 
 
 class SubscribeAdmin(admin.ModelAdmin):
