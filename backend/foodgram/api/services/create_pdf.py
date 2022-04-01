@@ -17,9 +17,10 @@ def create_pdf(data: list, title: str) -> TextIO:
 
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
-    pdfmetrics.registerFont(TTFont('Open Sans Bold', './static/open-sans-bold.ttf'))
+    pdfmetrics.registerFont(
+        TTFont('Open Sans Bold', './static/open-sans-bold.ttf')
+    )
     pdfmetrics.registerFont(TTFont('Open Sans', './static/open-sans.ttf'))
-
 
     p.setFont('Open Sans Bold', 20)
     y = 810

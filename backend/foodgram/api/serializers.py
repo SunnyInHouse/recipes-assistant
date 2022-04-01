@@ -1,10 +1,10 @@
 from django.contrib.auth.password_validation import password_changed
+from django.db.models import Exists
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
-from recipes.models import (Ingredient, IngredientInRecipe,
-                            Recipe,  Tag) #FavoriteList, ShoppingList,
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from users.models import Subscribe, User
 
 from . import services
@@ -68,9 +68,8 @@ class UserSerializer(serializers.ModelSerializer):
         запроса.
         """
 
-        user = self.context['request'].user
-        if user.is_authenticated:
-            return user.subscribers.filter(user_author=obj).exists()
+        if self.context.get('request').user.is_authenticated:
+            return obj.is_subscribed
         return False
 
     def create(self, validated_data):
@@ -233,34 +232,52 @@ class SubscribeSerializer(serializers.ModelSerializer):
 
     queryset = User.objects.all()
     user_author = serializers.PrimaryKeyRelatedField(queryset=queryset)
-    user_subscriber = serializers.PrimaryKeyRelatedField(queryset=queryset)
+    user = serializers.PrimaryKeyRelatedField(queryset=queryset)
+    type_list = serializers.CharField()
 
     class Meta:
-        model = Subscribe
-        fields = ('user_subscriber', 'user_author')
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subscribe.objects.all(),
-                fields=("user_subscriber", "user_author"),
-                message=(
-                    "Вы уже подписаны на данного пользователя."
-                ),
-            ),
-        ]
+        model = User
+        fields = (
+            'user',
+            'user_author',
+            'type_list'
+        )
 
     def validate(self, data):
         """
-        Функция проверяет, что пользователь не подписывается на самого себя.
+        Функция проверяет, что пользователь не подписывается на самого себя, и
+        что подписка на такого автора не существует.
         """
 
-        id_user = data['user_subscriber']
-        id_author = data['user_author']
-        if id_user == id_author:
+        user = data['user']
+        author = data['user_author']
+
+        if user == author:
             raise serializers.ValidationError(
                 'Нельзя подписываться на самого себя.'
             )
 
+        if Subscribe.objects.filter(user=user, user_author=author).exists():
+            raise serializers.ValidationError(
+                f'Вы уже подписаны на пользователя {author}.'
+            )
+
         return data
+
+    def create(self, validated_data):
+        """
+        Функция для добавление подписки.
+        """
+
+        user = validated_data['user']
+        user_author = validated_data['user_author']
+
+        Subscribe.objects.create(
+            user=user,
+            user_author=user_author
+        )
+
+        return user
 
     def to_representation(self, instance):
         """
@@ -268,7 +285,8 @@ class SubscribeSerializer(serializers.ModelSerializer):
         запрошенном в ТЗ. (аналогично представлению в списке подписок)
         """
 
-        data = instance.user_author
+        data = instance.subscribing.annotate(
+            is_subscribed=Exists(User.objects.all())).last()
 
         return ListSubscriptionsSerializer(
             data,
@@ -371,7 +389,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         if self.context.get('request').user.is_authenticated:
             return obj.is_favorited
         return False
-
 
     def get_is_in_shopping_cart(self, obj):
         """
@@ -531,9 +548,9 @@ class FavoriteShoppingSerializer(serializers.ModelSerializer):
         user = validated_data['user']
         recipe = validated_data['recipe']
 
-        if validated_data['type_list']=='favorite':
+        if validated_data['type_list'] == 'favorite':
             user.favorite_recipes.add(recipe)
-        if validated_data['type_list']=='shopping':
+        if validated_data['type_list'] == 'shopping':
             user.shopping_recipes.add(recipe)
 
         return recipe

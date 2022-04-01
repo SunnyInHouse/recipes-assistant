@@ -37,6 +37,13 @@ class User(AbstractUser):
         'Пароль',
         max_length=150,
     )
+    subscribing = models.ManyToManyField(
+        to='self',
+        through='Subscribe',
+        symmetrical=False,
+        verbose_name='Подписчики',
+        # related_name='subscribing',
+    )
     favorite_recipes = models.ManyToManyField(
         Recipe,
         verbose_name='Избранные рецепты',
@@ -77,33 +84,33 @@ class Subscribe(models.Model):
     Модель для описания системы подписки.
     """
 
-    user_subscriber = models.ForeignKey(
+    user = models.ForeignKey(
         User,
         verbose_name='Подписчик',
         on_delete=models.CASCADE,
-        related_name='subscribers',
+        related_name='subscriber',
     )
     user_author = models.ForeignKey(
         User,
         verbose_name='Автор, на которого подписывается подписчик',
         on_delete=models.CASCADE,
-        related_name='authors',
+        related_name='author',
     )
 
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        ordering = ('user_subscriber',)
+        ordering = ('user',)
         constraints = [
             models.UniqueConstraint(
-                fields=['user_subscriber', 'user_author'],
+                fields=['user', 'user_author'],
                 name='уникальность пары подписчик-автор',
             ),
             models.CheckConstraint(
-                check=~models.Q(user_subscriber=models.F('user_author')),
+                check=~models.Q(user=models.F('user_author')),
                 name='запрет подписки на самого себя',
             ),
         ]
 
     def __str__(self):
-        return f'{self.user_subscriber} подписан на {self.user_author}'
+        return f'{self.user} подписан на {self.user_author}'

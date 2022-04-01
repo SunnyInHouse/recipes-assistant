@@ -6,18 +6,23 @@ from . import views
 router1 = DefaultRouter()
 
 router1.register('users', views.UserViewSet, basename='users')
+router1.register(
+    'users/(?P<id>[^/.]+)/subscribe',
+    views.SubscribeViewSet,
+    basename='subscribe'
+)
 router1.register('tags', views.TagViewset, basename='tag')
 router1.register('ingredients', views.IngredientViewset, basename='ingredient')
 router1.register('recipes', views.RecipeViewset, basename='recipe')
 router1.register(
         'recipes/(?P<id>[^/.]+)/favorite',
-        views.FavouriteView,
-        basename = 'favorite'
+        views.FavouriteViewSet,
+        basename='favorite'
 )
 router1.register(
     'recipes/(?P<id>[^/.]+)/shopping_cart',
-    views.ShoppingListView,
-    basename = 'shoppinglist'
+    views.ShoppingListViewSet,
+    basename='shoppinglist'
 )
 
 urlpatterns = [

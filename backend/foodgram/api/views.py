@@ -1,6 +1,5 @@
-from django.db.models import Exists, Sum, OuterRef
+from django.db.models import Exists, OuterRef, Sum
 from django.http import FileResponse
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -15,19 +14,18 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import (GenericViewSet, ModelViewSet,
                                      ReadOnlyModelViewSet)
 
-from recipes.models import (Ingredient, IngredientInRecipe,
-                            Recipe,  Tag) #FavoriteList,ShoppingList,
-from users.models import Subscribe, User
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
+from users.models import User
 
 from . import services
 from .filters import RecipeFilter
+from .mixins import CustomCreateDeleteMixin
 from .pagination import CustomPageNumberPagination
 from .permissions import IsOwnerOrReadOnly
-from .serializers import ( FavoriteShoppingSerializer, GetTokenSerializer,
+from .serializers import (FavoriteShoppingSerializer, GetTokenSerializer,
                           IngredientSerielizer, ListSubscriptionsSerializer,
-                          RecipeSerializer, #ShoppingListSerializer,
-                          SubscribeSerializer, TagSerielizer,
-                          UserChangePasswordSerializer, UserSerializer) 
+                          RecipeSerializer, SubscribeSerializer, TagSerielizer,
+                          UserChangePasswordSerializer, UserSerializer)
 
 
 class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
@@ -42,18 +40,9 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
-    queryset = User.objects.all()
+    # queryset = User.objects.all()
     lookup_field = 'id'
     pagination_class = CustomPageNumberPagination
-
-    def get_serializer_class(self):
-        if self.action == 'set_password':
-            return UserChangePasswordSerializer
-        if self.action == 'subscriptions':
-            return ListSubscriptionsSerializer
-        if self.action in ('subscribe'):
-            return SubscribeSerializer
-        return UserSerializer
 
     def get_permissions(self):
         if self.action in ('list', 'create'):
@@ -61,6 +50,20 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         else:
             permission_classes = (IsAuthenticated,)
         return [permission() for permission in permission_classes]
+
+    def get_serializer_class(self):
+        if self.action == 'set_password':
+            return UserChangePasswordSerializer
+        if self.action == 'subscriptions':
+            return ListSubscriptionsSerializer
+        return UserSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            subscriptions = user.subscribing.filter(id=OuterRef('id'))
+            return User.objects.annotate(is_subscribed=Exists(subscriptions))
+        return User.objects.all()
 
     @action(
         methods=['POST', ],
@@ -121,7 +124,9 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         """
 
         user = request.user
-        queryset = User.objects.filter(authors__user_subscriber=user)
+        queryset = user.subscribing.annotate(
+            is_subscribed=Exists(User.objects.all())
+        ).all()
 
         page = self.paginate_queryset(queryset)
 
@@ -136,21 +141,43 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
             status=status.HTTP_200_OK
         )
 
-    @action(
-        methods=['POST', 'DELETE'],
-        url_path='(?P<id>[^/.]+)/subscribe',
-        detail=False,
-    )
-    def subscribe(self, request, id):
-        """
-        Метод для обработки POST и DELETE запросов на создание/удаление
-        подписки на пользователя (его данные указаны в path параметре id).
-        URL = /users/{id}/subscribe/.
-        """
+    # @action(
+    #     methods=['POST', 'DELETE'],
+    #     url_path='(?P<id>[^/.]+)/subscribe',
+    #     detail=False,
+    # )
+    # def subscribe(self, request, id):
+    #     """
+    #     Метод для обработки POST и DELETE запросов на создание/удаление
+    #     подписки на пользователя (его данные указаны в path параметре id).
+    #     URL = /users/{id}/subscribe/.
+    #     """
 
-        return services.add_del_smth_to_somewhere(
-            request, id, self.get_serializer, User, Subscribe
-        )
+    #     return services.add_del_smth_to_somewhere(
+    #         request, id, self.get_serializer, User, Subscribe
+    #     )
+
+
+class SubscribeViewSet(CustomCreateDeleteMixin):
+    """
+    Вьюсет для работы с запросами о подписке на автора - добавление и
+    удаление автора из списка подписок по id автора.
+    URL - /users/<int:id>/subscribe/.
+    """
+
+    name = 'Обработка запросов на добавление/удаление автора в подписки'
+    description = 'Обработка запросов на добавление/удаление автора в подписки'
+
+    permission_classes = (IsAuthenticated,)
+    serializer_class = SubscribeSerializer
+    model_class = User
+    error = 'Указанный автор не был добавлен в ваши подписки.'
+    list_object = 'subscribing'
+    data_field_name = 'user_author'
+
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     return user.subscribing.all()
 
 
 class GetTokenView(ObtainAuthToken):
@@ -262,15 +289,15 @@ class RecipeViewset(ModelViewSet):
         else:
             permission_classes = (IsAuthenticated,)
         return [permission() for permission in permission_classes]
-    
+
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
             favorite = user.favorite_recipes.filter(id=OuterRef('id'))
             shopping_list = user.shopping_recipes.filter(id=OuterRef('id'))
             return Recipe.objects.annotate(
-                is_favorited = Exists(favorite),
-                is_in_shopping_cart = Exists(shopping_list)
+                is_favorited=Exists(favorite),
+                is_in_shopping_cart=Exists(shopping_list)
             )
         return Recipe.objects.all()
 
@@ -308,9 +335,7 @@ class RecipeViewset(ModelViewSet):
         )
 
 
-
-from .mixins import CustomCreateDeleteMixin
-class FavouriteView(CustomCreateDeleteMixin):
+class FavouriteViewSet(CustomCreateDeleteMixin):
     """
     Вьюсет для работы с запросами об избранном - добавление в избранное и
     удаление рецепта из избранного по id.
@@ -327,7 +352,7 @@ class FavouriteView(CustomCreateDeleteMixin):
     list_object = 'favorite'
 
 
-class ShoppingListView(CustomCreateDeleteMixin):
+class ShoppingListViewSet(CustomCreateDeleteMixin):
     """
     Вьюсет для работы с запросами о списке покупок - добавление в список и
     удаление рецепта из списка по id.
