@@ -141,22 +141,6 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
             status=status.HTTP_200_OK
         )
 
-    # @action(
-    #     methods=['POST', 'DELETE'],
-    #     url_path='(?P<id>[^/.]+)/subscribe',
-    #     detail=False,
-    # )
-    # def subscribe(self, request, id):
-    #     """
-    #     Метод для обработки POST и DELETE запросов на создание/удаление
-    #     подписки на пользователя (его данные указаны в path параметре id).
-    #     URL = /users/{id}/subscribe/.
-    #     """
-
-    #     return services.add_del_smth_to_somewhere(
-    #         request, id, self.get_serializer, User, Subscribe
-    #     )
-
 
 class SubscribeViewSet(CustomCreateDeleteMixin):
     """
@@ -174,10 +158,6 @@ class SubscribeViewSet(CustomCreateDeleteMixin):
     error = 'Указанный автор не был добавлен в ваши подписки.'
     list_object = 'subscribing'
     data_field_name = 'user_author'
-
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     return user.subscribing.all()
 
 
 class GetTokenView(ObtainAuthToken):
