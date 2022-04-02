@@ -1,5 +1,6 @@
 from django.db.models import Exists, OuterRef, Sum
 from django.http import FileResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -15,7 +16,7 @@ from rest_framework.viewsets import (GenericViewSet, ModelViewSet,
                                      ReadOnlyModelViewSet)
 
 from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
-from users.models import User
+from users.models import Subscribe, User
 
 from . import services
 from .filters import RecipeFilter
@@ -40,7 +41,6 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
-    # queryset = User.objects.all()
     lookup_field = 'id'
     pagination_class = CustomPageNumberPagination
 
@@ -125,7 +125,10 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
 
         user = request.user
         queryset = user.subscribing.annotate(
-            is_subscribed=Exists(User.objects.all())
+            is_subscribed=Exists(
+                Subscribe.objects.filter(user=user, user_author=OuterRef('pk'))
+            )
+            #is_subscribed=Exists(User.objects.all())
         ).all()
 
         page = self.paginate_queryset(queryset)
@@ -178,7 +181,9 @@ class GetTokenView(ObtainAuthToken):
         """
         serializer = GetTokenSerializer(data=request.data)
         if serializer.is_valid():
-            user = User.objects.get(email=serializer.validated_data['email'])
+            user = get_object_or_404(
+                User, email=serializer.validated_data['email']
+            )
             token, created = Token.objects.get_or_create(user=user)
             return Response(
                 {

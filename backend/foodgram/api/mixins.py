@@ -15,8 +15,8 @@ class CustomCreateDeleteMixin(DestroyModelMixin, CreateModelMixin,
     serializer_class = None
     model_class = None
     error = 'Указанный объект не был добавлен в список'
-    list_object = 'favorite'
-    data_field_name = 'recipe'
+    list_object = None
+    data_field_name = None
 
     def create(self, request, id):
 

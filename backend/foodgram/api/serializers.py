@@ -1,5 +1,5 @@
 from django.contrib.auth.password_validation import password_changed
-from django.db.models import Exists
+from django.db.models import Exists, Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
@@ -208,8 +208,15 @@ class ListSubscriptionsSerializer(UserSerializer):
         """
 
         request = self.context.get('request')
-        recipes = obj.recipes.all()
         limit = request.query_params.get('recipes_limit')
+        recipes = obj.recipes.all()
+        # obj = obj.objects.
+        # recipes = obj.recipes.prefetch_related(
+        #     Prefetch('id', 'name', 'cooking_time', 'image',
+        #         queryset=queryset[:int(limit)],
+        #         to_attr='limit'
+        #     )
+        # )
         if limit:
             recipes = recipes[:int(limit)]
 

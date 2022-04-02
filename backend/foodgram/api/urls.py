@@ -3,30 +3,30 @@ from rest_framework.routers import DefaultRouter
 
 from . import views
 
-router1 = DefaultRouter()
+router = DefaultRouter()
 
-router1.register('users', views.UserViewSet, basename='users')
-router1.register(
+router.register('users', views.UserViewSet, basename='users')
+router.register(
     'users/(?P<id>[^/.]+)/subscribe',
     views.SubscribeViewSet,
     basename='subscribe'
 )
-router1.register('tags', views.TagViewset, basename='tag')
-router1.register('ingredients', views.IngredientViewset, basename='ingredient')
-router1.register('recipes', views.RecipeViewset, basename='recipe')
-router1.register(
+router.register('tags', views.TagViewset, basename='tag')
+router.register('ingredients', views.IngredientViewset, basename='ingredient')
+router.register('recipes', views.RecipeViewset, basename='recipe')
+router.register(
         'recipes/(?P<id>[^/.]+)/favorite',
         views.FavouriteViewSet,
         basename='favorite'
 )
-router1.register(
+router.register(
     'recipes/(?P<id>[^/.]+)/shopping_cart',
     views.ShoppingListViewSet,
     basename='shoppinglist'
 )
 
 urlpatterns = [
-    path('', include(router1.urls)),
+    path('', include(router.urls)),
     path(
         'auth/token/login/',
         views.GetTokenView.as_view(),
@@ -37,8 +37,4 @@ urlpatterns = [
         views.DelTokenView.as_view(),
         name='token_logout'
     ),
-    # path(
-    #     'recipes/<int:id>/favorite/',
-    #     views.FavouriteView.as_view(),
-    #     name = 'favorite')
 ]
