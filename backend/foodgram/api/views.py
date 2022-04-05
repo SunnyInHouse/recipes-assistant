@@ -127,8 +127,7 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         queryset = user.subscribing.annotate(
             is_subscribed=Exists(
                 Subscribe.objects.filter(user=user, user_author=OuterRef('pk'))
-            )
-            #is_subscribed=Exists(User.objects.all())
+            ).prefetch_related('recipes')
         ).all()
 
         page = self.paginate_queryset(queryset)

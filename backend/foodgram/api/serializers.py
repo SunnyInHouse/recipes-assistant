@@ -208,17 +208,35 @@ class ListSubscriptionsSerializer(UserSerializer):
         """
 
         request = self.context.get('request')
-        limit = request.query_params.get('recipes_limit')
-        recipes = obj.recipes.all()
-        # obj = obj.objects.
-        # recipes = obj.recipes.prefetch_related(
-        #     Prefetch('id', 'name', 'cooking_time', 'image',
-        #         queryset=queryset[:int(limit)],
-        #         to_attr='limit'
-        #     )
-        # )
+        limit = int(request.query_params.get('recipes_limit'))
+        print(limit)
         if limit:
-            recipes = recipes[:int(limit)]
+            recipes_list = (obj.recipes.
+                filter(id__in=[i for i in range(1,int(limit)+1)])
+            )
+        else:
+            recipes_list = obj.recipes.only('id',
+            'name',
+            'image',
+            'cooking_time',)
+        # print(recipes_list)
+        # print(obj.recipes.filter(id__in=[i for i in range(1,int(limit)+1)]))
+  
+        recipes = (obj.recipes.prefetch_related(
+          Prefetch('author', queryset=recipes_list, to_attr='limit_recipes')).
+          only('id','name', 'image', 'cooking_time',)[:limit]
+        )
+    #.values('id', 'name', 'image', 'cooking_time')
+        
+        # print(recipes)
+        # 
+        # recipes = Recipe.objects.prefetch_related(
+        #   Prefetch('author', queryset=Recipe.objects.filter(author=obj), to_attr='recipe_list'))
+        # recipe = Recipe.objects.prefetch_related(
+        #     Prefetch('name', queryset=recipes[:int(limit)], to_attr='limit_recipes'))
+        
+        # limit_recipes = recipes[0].limit_recipes
+        # print(limit_recipes)
 
         return RecipesMiniSerializers(recipes, many=True).data
 
