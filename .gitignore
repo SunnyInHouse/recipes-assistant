@@ -138,3 +138,6 @@ dmypy.json
 #media
 /media
 media/
+
+/BACKUP_1
+BACKUP_1/

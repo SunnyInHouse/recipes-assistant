@@ -4,13 +4,10 @@ WORKDIR /code
 
 RUN pip install "poetry==1.1"
 
-COPY poetry.lock .
-COPY pyproject.toml .
+COPY . .
 
 RUN poetry config virtualenvs.create false
-RUN poetry install --no-dev
-
-COPY . .
+RUN poetry install
 
 WORKDIR /code/foodgram
 
