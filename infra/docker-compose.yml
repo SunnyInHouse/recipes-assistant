@@ -3,10 +3,11 @@ services:
 
   db:
     image: postgres:13.0-alpine
+    restart: always
     volumes:
-      - /var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql/data/
     env_file:
-      - ./.env
+      - .env
 
   # backend: (for local using)
   #   build: ../backend
@@ -20,7 +21,7 @@ services:
   #     - .env
   
   backend:
-    image: sunnyangel/foodgram_backend:latest
+    image: sunnyangel/foodgram:v4
     restart: always
     volumes:
       - static_value:/code/static/
@@ -39,6 +40,7 @@ services:
 
   nginx:
     image: nginx:1.19.3
+    restart: always
     ports:
       - "80:80"
     volumes:
