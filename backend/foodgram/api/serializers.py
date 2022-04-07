@@ -513,8 +513,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 class FavoriteShoppingSerializer(serializers.ModelSerializer):
     """
     Сериалиализатор для обработки запросов на добавление рецептов в избранное
-    или в список покупок в зависимости от значения переданного в него параметра
-    type_list.
+    или в список покупок.
     """
 
     recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
@@ -551,7 +550,7 @@ class FavoriteShoppingSerializer(serializers.ModelSerializer):
 
         if condition:
             raise serializers.ValidationError(
-                    f"Рецепт {recipe} уже добавлен в ваш {error_text}."
+                    f"Рецепт {recipe} уже добавлен в {error_text}."
             )
 
         return data

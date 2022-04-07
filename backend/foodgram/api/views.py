@@ -2,7 +2,6 @@ from django.db.models import Exists, OuterRef, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -16,6 +15,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import (GenericViewSet, ModelViewSet,
                                      ReadOnlyModelViewSet)
 
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from users.models import Subscribe, User
 
 from . import services
@@ -155,11 +155,24 @@ class SubscribeViewSet(CustomCreateDeleteMixin):
     description = 'Обработка запросов на добавление/удаление автора в подписки'
 
     permission_classes = (IsAuthenticated,)
-    serializer_class = SubscribeSerializer
     model_class = User
     error = 'Указанный автор не был добавлен в ваши подписки.'
-    list_object = 'subscribing'
-    data_field_name = 'user_author'
+
+    def get_queryset(self):
+        user = self.request.user
+        return user.subscribing
+
+    def get_serializer(self, id):
+        return SubscribeSerializer(
+            data={
+                'user_author': id,
+                'user': self.request.user.id,
+                'type_list': 'shopping',
+            },
+            context={
+                'request': self.request,
+            }
+        )
 
 
 class GetTokenView(ObtainAuthToken):
@@ -330,11 +343,24 @@ class FavouriteViewSet(CustomCreateDeleteMixin):
     description = 'Обработка запросов на добавление/удаление в избранное'
 
     permission_classes = (IsAuthenticated,)
-    serializer_class = FavoriteShoppingSerializer
     model_class = Recipe
     error = 'Указанный рецепт не был добавлен в список избранного.'
-    list_object = 'favorite'
-    data_field_name = 'recipe'
+
+    def get_queryset(self):
+        user = self.request.user
+        return user.favorite_recipes
+
+    def get_serializer(self, id):
+        return FavoriteShoppingSerializer(
+            data={
+                'recipe': id,
+                'user': self.request.user.id,
+                'type_list': 'favorite',
+            },
+            context={
+                'request': self.request,
+            }
+        )
 
 
 class ShoppingListViewSet(CustomCreateDeleteMixin):
@@ -348,8 +374,21 @@ class ShoppingListViewSet(CustomCreateDeleteMixin):
     description = 'Обработка запросов на добавление/удаление в список покупок'
 
     permission_classes = (IsAuthenticated,)
-    serializer_class = FavoriteShoppingSerializer
     model_class = Recipe
     error = 'Указанный рецепт не был добавлен в список покупок.'
-    list_object = 'shopping'
-    data_field_name = 'recipe'
+
+    def get_queryset(self):
+        user = self.request.user
+        return user.shopping_recipes
+
+    def get_serializer(self, id):
+        return FavoriteShoppingSerializer(
+            data={
+                'recipe': id,
+                'user': self.request.user.id,
+                'type_list': 'shopping',
+            },
+            context={
+                'request': self.request,
+            }
+        )
