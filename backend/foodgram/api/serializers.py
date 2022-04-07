@@ -1,5 +1,5 @@
 from django.contrib.auth.password_validation import password_changed
-from django.db.models import Exists, Prefetch
+from django.db.models import Exists
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
@@ -68,8 +68,16 @@ class UserSerializer(serializers.ModelSerializer):
         запроса.
         """
 
-        if self.context.get('request').user.is_authenticated:
-            return obj.is_subscribed
+        if self.context.get('request').path_info == '/api/users/me/':
+            return False
+
+        user = self.context.get('request').user
+        if user.is_authenticated:
+            try:
+                return obj.is_subscribed
+            except AttributeError:
+                return user.subscriber.filter(user_author=obj).exists()
+
         return False
 
     def create(self, validated_data):
@@ -208,35 +216,12 @@ class ListSubscriptionsSerializer(UserSerializer):
         """
 
         request = self.context.get('request')
-        limit = int(request.query_params.get('recipes_limit'))
-        print(limit)
+        limit = request.query_params.get('recipes_limit')
+
+        recipes = obj.recipes.only('id', 'name', 'image', 'cooking_time')
+
         if limit:
-            recipes_list = (obj.recipes.
-                filter(id__in=[i for i in range(1,int(limit)+1)])
-            )
-        else:
-            recipes_list = obj.recipes.only('id',
-            'name',
-            'image',
-            'cooking_time',)
-        # print(recipes_list)
-        # print(obj.recipes.filter(id__in=[i for i in range(1,int(limit)+1)]))
-  
-        recipes = (obj.recipes.prefetch_related(
-          Prefetch('author', queryset=recipes_list, to_attr='limit_recipes')).
-          only('id','name', 'image', 'cooking_time',)[:limit]
-        )
-    #.values('id', 'name', 'image', 'cooking_time')
-        
-        # print(recipes)
-        # 
-        # recipes = Recipe.objects.prefetch_related(
-        #   Prefetch('author', queryset=Recipe.objects.filter(author=obj), to_attr='recipe_list'))
-        # recipe = Recipe.objects.prefetch_related(
-        #     Prefetch('name', queryset=recipes[:int(limit)], to_attr='limit_recipes'))
-        
-        # limit_recipes = recipes[0].limit_recipes
-        # print(limit_recipes)
+            recipes = recipes[:int(limit)]
 
         return RecipesMiniSerializers(recipes, many=True).data
 
@@ -411,6 +396,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         Функция проверяет, добавлен ли рецепт в избранное.
         """
 
+        if self.context.get('request').method == 'POST':
+            return False
+
         if self.context.get('request').user.is_authenticated:
             return obj.is_favorited
         return False
@@ -419,6 +407,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         """
         Функция проверяет, добавлен ли рецепт в список покупок.
         """
+
+        if self.context.get('request').method == 'POST':
+            return False
 
         if self.context.get('request').user.is_authenticated:
             return obj.is_in_shopping_cart

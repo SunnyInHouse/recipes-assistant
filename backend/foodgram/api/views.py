@@ -2,6 +2,7 @@ from django.db.models import Exists, OuterRef, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -15,7 +16,6 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import (GenericViewSet, ModelViewSet,
                                      ReadOnlyModelViewSet)
 
-from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from users.models import Subscribe, User
 
 from . import services
@@ -127,8 +127,8 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         queryset = user.subscribing.annotate(
             is_subscribed=Exists(
                 Subscribe.objects.filter(user=user, user_author=OuterRef('pk'))
-            ).prefetch_related('recipes')
-        ).all()
+            )
+        ).prefetch_related('recipes').all()
 
         page = self.paginate_queryset(queryset)
 
@@ -334,6 +334,7 @@ class FavouriteViewSet(CustomCreateDeleteMixin):
     model_class = Recipe
     error = 'Указанный рецепт не был добавлен в список избранного.'
     list_object = 'favorite'
+    data_field_name = 'recipe'
 
 
 class ShoppingListViewSet(CustomCreateDeleteMixin):
@@ -351,3 +352,4 @@ class ShoppingListViewSet(CustomCreateDeleteMixin):
     model_class = Recipe
     error = 'Указанный рецепт не был добавлен в список покупок.'
     list_object = 'shopping'
+    data_field_name = 'recipe'

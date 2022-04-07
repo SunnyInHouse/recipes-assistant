@@ -111,7 +111,7 @@ class Recipe(models.Model):
     )
     image = models.ImageField(
         'Изображение для рецепта',
-        upload_to='media_for_recipe/',
+        upload_to='images/',
     )
     tags = models.ManyToManyField(
         Tag,

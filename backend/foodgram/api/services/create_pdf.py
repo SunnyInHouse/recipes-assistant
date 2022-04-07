@@ -1,8 +1,3 @@
-"""
-Создает pdf-файл при помощи ReportLab.
-"""
-
-
 import io
 from typing import TextIO
 
@@ -14,6 +9,9 @@ from reportlab.pdfgen import canvas
 
 
 def create_pdf(data: list, title: str) -> TextIO:
+    """
+    Создает pdf-файл при помощи ReportLab.
+    """
 
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)

@@ -1,13 +1,13 @@
-"""
-Проверки соответствия настройкам паролей полученного от пользователя пароля.
-"""
-
 from django.contrib.auth.password_validation import (
     password_validators_help_texts, validate_password)
 from rest_framework.serializers import ValidationError
 
 
 def password_verification(value: str) -> str:
+    """
+    Проверка соответствия настройкам паролей полученного от пользователя
+    пароля.
+    """
 
     help_text = password_validators_help_texts()
 

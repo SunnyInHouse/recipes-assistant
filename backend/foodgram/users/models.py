@@ -42,7 +42,6 @@ class User(AbstractUser):
         through='Subscribe',
         symmetrical=False,
         verbose_name='Подписчики',
-        # related_name='subscribing',
     )
     favorite_recipes = models.ManyToManyField(
         Recipe,
