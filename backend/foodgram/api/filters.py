@@ -3,11 +3,13 @@
 """
 
 from django_filters import rest_framework as filters
-from rest_framework.serializers import ValidationError
 
 from recipes.models import Recipe, Tag
 
-from .services import check_value_is_0_or_1
+RECIPE_CHOICES = (
+    (0, 'Not_In_List'),
+    (1, 'In_List'),
+)
 
 
 class RecipeFilter(filters.FilterSet):
@@ -23,28 +25,26 @@ class RecipeFilter(filters.FilterSet):
         to_field_name='slug',
         queryset=Tag.objects.all()
     )
-    is_favorited = filters.NumberFilter(method='filter_recipes')
-    is_in_shopping_cart = filters.NumberFilter(method='filter_recipes')
+    is_in_shopping_cart = filters.ChoiceFilter(
+        choices=RECIPE_CHOICES,
+        method='get_is_in'
+    )
+    is_favorited = filters.ChoiceFilter(
+        choices=RECIPE_CHOICES,
+        method='get_is_in'
+    )
 
-    def filter_recipes(self, queryset, name, value):
+    def get_is_in(self, queryset, name, value):
         """
-        Фильтрация рецептов по избранному и списку покупок. Также проверяет
-        корректность заданного значения.
+        Фильтрация рецептов по избранному и списку покупок.
         """
-
-        if not check_value_is_0_or_1(value):
-            raise ValidationError(
-                f"Некорректное значение параметра {name}."
-            )
-
         user = self.request.user
         if user.is_authenticated:
-            if value == 1:
+            if value == '1':
                 if name == 'is_favorited':
                     queryset = queryset.filter(favorites=user)
                 if name == 'is_in_shopping_cart':
                     queryset = queryset.filter(shoppings=user)
-
         return queryset
 
     class Meta:
