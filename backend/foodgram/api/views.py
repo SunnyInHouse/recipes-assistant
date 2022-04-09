@@ -1,4 +1,4 @@
-from django.db.models import Exists, OuterRef, Sum, Count
+from django.db.models import Exists, OuterRef, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -115,7 +115,6 @@ class UserViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin,
         methods=['GET', ],
         url_path='subscriptions',
         detail=False,
-        pagination_class = CustomPageNumberPagination
     )
     def subscriptions(self, request):
         """
@@ -314,11 +313,19 @@ class RecipeViewset(ModelViewSet):
             IngredientInRecipe.objects.
             prefetch_related('ingredient', 'recipe').
             filter(recipe__shoppings=user).
-            values_list('ingredient__name', 'ingredient__measurement_unit').
-            order_by('ingredient__name')
+            values_list(
+                'ingredient__id', 'ingredient__name',
+                'ingredient__measurement_unit', 'quantity'
+            ).
+            order_by('ingredient__id')
         )
 
-        shopping_list = ingredient_list_user.annotate(amount=Sum('quantity'))
+        shopping_list = (
+            ingredient_list_user.annotate(amount=Sum('quantity')).
+            values_list(
+                'ingredient__name', 'ingredient__measurement_unit', 'amount'
+            )
+        )
 
         file = services.create_pdf(shopping_list, 'Список покупок')
 

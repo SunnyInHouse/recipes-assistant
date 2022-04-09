@@ -48,7 +48,13 @@ class Tag(models.Model):
     color = models.CharField(
         'Цвет в кодировке HEX',
         max_length=7,
-        null=True
+        default='#569914',
+        validators=[
+            validators.RegexValidator(
+                regex=r'#[a-f\d]{6}',
+                message='Укажите цвет в HEX кодировке.'
+            )
+        ]
     )
     slug = models.SlugField(
         'Слаг тега',
