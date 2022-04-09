@@ -1,4 +1,4 @@
-from django.db.models import Exists, OuterRef, Sum
+from django.db.models import Exists, OuterRef, Sum, Count
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -314,13 +314,11 @@ class RecipeViewset(ModelViewSet):
             IngredientInRecipe.objects.
             prefetch_related('ingredient', 'recipe').
             filter(recipe__shoppings=user).
-            values_list('ingredient__id','ingredient__name', 'ingredient__measurement_unit').
-            order_by('ingredient__id')
+            values_list('ingredient__name', 'ingredient__measurement_unit').
+            order_by('ingredient__name')
         )
-        print(ingredient_list_user.distinct())
 
         shopping_list = ingredient_list_user.annotate(amount=Sum('quantity'))
-        print(shopping_list)
 
         file = services.create_pdf(shopping_list, 'Список покупок')
 
