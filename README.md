@@ -2,3 +2,7 @@
 
 
 http://sunny24.ru
+
+админка:
+admin@admin.ru
+Qwerty123
