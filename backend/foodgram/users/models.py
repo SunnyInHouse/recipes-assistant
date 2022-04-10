@@ -91,7 +91,7 @@ class Subscribe(models.Model):
     )
     user_author = models.ForeignKey(
         User,
-        verbose_name='Автор, на которого подписывается подписчик',
+        verbose_name='Автор',
         on_delete=models.CASCADE,
         related_name='author',
     )
