@@ -313,10 +313,7 @@ class RecipeViewset(ModelViewSet):
             IngredientInRecipe.objects.
             prefetch_related('ingredient', 'recipe').
             filter(recipe__shoppings=user).
-            values_list(
-                'ingredient__id', 'ingredient__name',
-                'ingredient__measurement_unit', 'quantity'
-            ).
+            values('ingredient__id').
             order_by('ingredient__id')
         )
 
