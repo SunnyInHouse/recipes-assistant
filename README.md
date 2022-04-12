@@ -36,9 +36,9 @@
  sudo chmod +x /usr/local/bin/docker-compose
 ```
 
-
 2. Скопируйте файлы Docker-compose.yml и nginx.conf из папки infra репозитория
 https://github.com/SvetlanaLogvinova88/foodgram-project-react.git
+Также необходимо скопировать файл ingredients.csv из папки data указанного репозитория.
 
 3. Создайте файл .env в папке со скопированными из репозитория файлами со следующим
 содержимым:
@@ -51,13 +51,12 @@ DB_HOST=db
 DB_PORT=5432
 ```
 
-
 4. Перейдите с папку со скопированными из репозитория файлами и запустите проект:
 ```
 sudo docker-compose up -d --build
 ```
 
-6. Соберите статику и проведите миграции:
+5. Соберите статику и проведите миграции:
 <CONTAINER ID> - id контейнера backend
 ```
 docker-compose exec <CONTAINER ID> python3 manage.py collectstatic --noinput
@@ -66,11 +65,20 @@ python manage.py makemigrations
 python manage.py migrate --noinput
 ```
 
-7. Создайте суперпользователя для сайта:
+6. Создайте суперпользователя для сайта:
 ```
 docker exec -it <CONTAINER ID> bash
 python manage.py createsuperuser
 ```
+
+7. загрузите список ингредиентов на сайт:
+```
+docker cp ingredients.csv <CONTAINER ID>:/code
+docker exec -it <CONTAINER ID> bash
+python manage.py load_ingridients /code/ingredients.csv
+```
+
+8. зайдите в админку сайта и создайте теги рецептов.
 
 
 ### Примеры запросов:
